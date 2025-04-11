@@ -1,11 +1,16 @@
 import {Button, Form, message, Modal} from "antd";
 import {useState} from "react";
-import {createCoachAPI} from "../../../services/api.service.js";
+import {createCoachAPI, createCoachWithImageAPI} from "../../../services/api.service.js";
 import CoachForm from "./coach.form.jsx";
 
 const CreateCoachModal = ({ isOpen, onCancel, onSuccess }) => {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
+
+    const handleImageChange = (file) => {
+        setImageFile(file);
+    };
 
     const handleSubmit = async () => {
         try {
@@ -18,16 +23,25 @@ const CreateCoachModal = ({ isOpen, onCancel, onSuccess }) => {
                 dob: values.dob ? values.dob.format('YYYY-MM-DD') : null
             };
 
-            const res = await createCoachAPI(formattedValues);
+            // Use the image upload API if an image is selected
+            let res;
+            if (imageFile) {
+                res = await createCoachWithImageAPI(formattedValues, imageFile);
+            } else {
+                res = await createCoachAPI(formattedValues);
+            }
+
             if (res.data) {
                 message.success("Head Coach created successfully");
                 form.resetFields();
+                setImageFile(null);
                 onSuccess();
             } else {
-                message.error("Failed to create player");
+                message.error("Failed to create head coach");
             }
         } catch (error) {
             console.error("Form validation or submission error:", error);
+            message.error("Please check the form fields and try again");
         } finally {
             setSubmitting(false);
         }
@@ -54,7 +68,11 @@ const CreateCoachModal = ({ isOpen, onCancel, onSuccess }) => {
             width={600}
             destroyOnClose={true}
         >
-            <CoachForm form={form} formName="createCoachForm" />
+            <CoachForm 
+                form={form} 
+                formName="createCoachForm" 
+                onImageChange={handleImageChange}
+            />
         </Modal>
     );
 };

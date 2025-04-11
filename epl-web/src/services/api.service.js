@@ -355,6 +355,104 @@ const getClubTopAssistsAPI = (seasonId, clubId) => {
     return axios.get(URL_BACKEND);
 };
 
+// File Upload API calls
+// Helper function to build multipart/form-data request with both JSON and file
+const createFormDataRequest = (jsonData, imageFile) => {
+    const formData = new FormData();
+    
+    // Add JSON data as 'data' field
+    formData.append('data', new Blob([JSON.stringify(jsonData)], { type: 'application/json' }));
+    
+    // Add image file if it exists
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return formData;
+};
+
+// Player API with image upload
+const createPlayerWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/players`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.post(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+const updatePlayerWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/players`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.put(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+// Coach API with image upload
+const createCoachWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/coaches`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.post(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+const updateCoachWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/coaches`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.put(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+// Club API with image upload
+const createClubWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/clubs`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.post(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+const updateClubWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/clubs`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.put(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+// League API with image upload
+const createLeagueWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/leagues`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.post(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+const updateLeagueWithImageAPI = (jsonData, imageFile) => {
+    const URL_BACKEND = `/api/v1/leagues`;
+    const formData = createFormDataRequest(jsonData, imageFile);
+    
+    return axios.put(URL_BACKEND, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+};
+
+// Helper to get image URL
+const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    return `/api/v1/images/${imagePath}`;
+};
+
 export {
     loginAPI,
     registerUserAPI,
@@ -412,6 +510,15 @@ export {
     getClubTransfersAPI,
     getClubSeasonsAPI,
     getClubTopScorersAPI,
-    getClubTopAssistsAPI
+    getClubTopAssistsAPI,
+    createPlayerWithImageAPI,
+    updatePlayerWithImageAPI,
+    createCoachWithImageAPI,
+    updateCoachWithImageAPI,
+    createClubWithImageAPI,
+    updateClubWithImageAPI,
+    createLeagueWithImageAPI,
+    updateLeagueWithImageAPI,
+    getImageUrl
 }
 

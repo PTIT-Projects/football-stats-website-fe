@@ -1,19 +1,25 @@
 // epl-web/src/components/admin/player/player.edit.jsx
 import { Modal, Form, Button, message } from "antd";
 import { useState, useEffect } from "react";
-import { updatePlayerAPI } from "../../../services/api.service.js";
+import { updatePlayerAPI, updatePlayerWithImageAPI } from "../../../services/api.service.js";
 import PlayerForm from "./player.form.jsx";
 
 const EditPlayerModal = ({ isOpen, onCancel, onSuccess, player }) => {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
 
     // Reset form when modal closes
     useEffect(() => {
         if (!isOpen) {
             form.resetFields();
+            setImageFile(null);
         }
     }, [isOpen, form]);
+
+    const handleImageChange = (file) => {
+        setImageFile(file);
+    };
 
     const handleSubmit = async () => {
         try {
@@ -29,12 +35,19 @@ const EditPlayerModal = ({ isOpen, onCancel, onSuccess, player }) => {
 
             console.log('Submitting player update:', formattedValues);
 
-            const res = await updatePlayerAPI(formattedValues);
+            // Use the image upload API if an image is selected or changed
+            let res;
+            if (imageFile) {
+                res = await updatePlayerWithImageAPI(formattedValues, imageFile);
+            } else {
+                res = await updatePlayerAPI(formattedValues);
+            }
+
             if (res.data) {
                 message.success("Player updated successfully");
-                // Call onSuccess to trigger table reload
+                setImageFile(null);
                 onSuccess();
-                onCancel(); // Close the modal
+                onCancel();
             } else {
                 message.error("Failed to update player");
             }
@@ -72,6 +85,7 @@ const EditPlayerModal = ({ isOpen, onCancel, onSuccess, player }) => {
                     form={form}
                     initialValues={player}
                     formName="editPlayerForm"
+                    onImageChange={handleImageChange}
                 />
             )}
         </Modal>

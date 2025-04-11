@@ -1,11 +1,16 @@
 import { Modal, Form, Button, message } from "antd";
 import { useState } from "react";
-import { createPlayerAPI } from "../../../services/api.service.js";
+import { createPlayerAPI, createPlayerWithImageAPI } from "../../../services/api.service.js";
 import PlayerForm from "./player.form.jsx";
 
 const CreatePlayerModal = ({ isOpen, onCancel, onSuccess }) => {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
+
+    const handleImageChange = (file) => {
+        setImageFile(file);
+    };
 
     const handleSubmit = async () => {
         try {
@@ -18,16 +23,25 @@ const CreatePlayerModal = ({ isOpen, onCancel, onSuccess }) => {
                 dob: values.dob ? values.dob.format('YYYY-MM-DD') : null
             };
 
-            const res = await createPlayerAPI(formattedValues);
+            // Use the image upload API if an image is selected
+            let res;
+            if (imageFile) {
+                res = await createPlayerWithImageAPI(formattedValues, imageFile);
+            } else {
+                res = await createPlayerAPI(formattedValues);
+            }
+
             if (res.data) {
                 message.success("Player created successfully");
                 form.resetFields();
+                setImageFile(null);
                 onSuccess();
             } else {
                 message.error("Failed to create player");
             }
         } catch (error) {
             console.error("Form validation or submission error:", error);
+            message.error("Please check the form fields and try again");
         } finally {
             setSubmitting(false);
         }
@@ -54,7 +68,11 @@ const CreatePlayerModal = ({ isOpen, onCancel, onSuccess }) => {
             width={600}
             destroyOnClose={true}
         >
-            <PlayerForm form={form} formName="createPlayerForm" />
+            <PlayerForm 
+                form={form} 
+                formName="createPlayerForm" 
+                onImageChange={handleImageChange}
+            />
         </Modal>
     );
 };
