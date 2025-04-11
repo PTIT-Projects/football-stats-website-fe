@@ -1,19 +1,13 @@
 // epl-web/src/components/client/player/player.table.jsx
-import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { Table, Card, Alert, Button, Tag } from "antd";
-import { fetchAllPlayersAPI } from "../../../services/api.service.js";
+import { Table, Tag, Input, Button, Row, Col, Select, Avatar } from 'antd';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { getSearchPlayersAPI, getImageUrl } from '../../../services/api.service';
+import { SearchOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
 
 const ClientPlayerTable = () => {
-    // Get filter parameters from URL search parameters
-    const [searchParams] = useSearchParams();
-    const position = searchParams.get('position');
-    const citizenship = searchParams.get('citizenship');
-    const transferType = searchParams.get('transferType');
-    const club = searchParams.get('club');
-
-    // State variables
-    const [filterInfo, setFilterInfo] = useState(null);
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({
@@ -22,203 +16,239 @@ const ClientPlayerTable = () => {
         total: 0
     });
 
-    // Update filter info when URL parameters change
+    // Filter states
+    const [searchName, setSearchName] = useState('');
+    const [selectedPosition, setSelectedPosition] = useState('');
+    const [selectedClub, setSelectedClub] = useState('');
+    const [selectedNationality, setSelectedNationality] = useState('');
+
+    // Lists for filters
+    const [positions, setPositions] = useState([]);
+    const [clubs, setClubs] = useState([]);
+    const [nationalities, setNationalities] = useState([]);
+
+    // Load players data
     useEffect(() => {
-        if (position || citizenship || transferType || club) {
-            let filterText = "Filtering by: ";
-            let filters = [];
+        loadPlayers();
+    }, [pagination.current, pagination.pageSize, searchName, selectedPosition, selectedClub, selectedNationality]);
 
-            if (position) filters.push(`Position "${position}"`);
-            if (citizenship) filters.push(`Nationality "${citizenship}"`);
-            if (transferType) filters.push(`Transfer Type "${transferType}"`);
-            if (club) filters.push(`Club "${club}"`);
-
-            setFilterInfo(filterText + filters.join(", "));
-        } else {
-            setFilterInfo(null);
-        }
-    }, [position, citizenship, transferType, club]);
-
-    // Function to fetch players with filters
-    const fetchPlayers = async (params = {}) => {
+    const loadPlayers = async () => {
         setLoading(true);
         try {
-            // Build filter query
-            let filterParts = [];
-
-            if (position) {
-                filterParts.push(`positions : '${position}'`);
-            }
-
-            if (citizenship) {
-                filterParts.push(`citizenships : '${citizenship}'`);
-            }
-
-            if (transferType) {
-                filterParts.push(`transferHistories.type : '${transferType}'`);
-            }
-
-            if (club) {
-                filterParts.push(`transferHistories.club.id : ${club}`);
-            }
-
-            // API query parameters
-            const queryParams = {
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize,
-                filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+            const filters = {
+                name: searchName || undefined,
+                position: selectedPosition || undefined,
+                club: selectedClub || undefined,
+                nationality: selectedNationality || undefined,
+                page: pagination.current - 1,
+                size: pagination.pageSize
             };
 
-            const response = await fetchAllPlayersAPI(queryParams);
-
-            if (response.data && response.data.result) {
-                setPlayers(response.data.result);
+            const response = await getSearchPlayersAPI(filters);
+            
+            if (response.data) {
+                setPlayers(response.data.content);
                 setPagination({
-                    current: response.data.meta.page,
-                    pageSize: response.data.meta.pageSize,
-                    total: response.data.meta.total
+                    ...pagination,
+                    total: response.data.totalElements
                 });
+                
+                // Extract unique values for filters
+                if (response.data.positions) {
+                    setPositions(response.data.positions);
+                }
+                if (response.data.clubs) {
+                    setClubs(response.data.clubs);
+                }
+                if (response.data.nationalities) {
+                    setNationalities(response.data.nationalities);
+                }
             }
         } catch (error) {
-            console.error("Failed to fetch players:", error);
+            console.error("Error loading players:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    // Load players when filters change
-    useEffect(() => {
-        fetchPlayers();
-    }, [position, citizenship, transferType, club]);
-
-    // Handle pagination changes
-    const handleTableChange = (newPagination) => {
-        if (newPagination.current !== pagination.current ||
-            newPagination.pageSize !== pagination.pageSize) {
-            fetchPlayers({
-                current: newPagination.current,
-                pageSize: newPagination.pageSize
-            });
-        }
+    // Handle table pagination change
+    const handleTableChange = (pagination) => {
+        setPagination(pagination);
     };
 
-    // Table columns with sort functionality
+    // Handle search button click
+    const handleSearch = () => {
+        setPagination({ ...pagination, current: 1 });
+    };
+
+    // Handle reset filters
+    const handleReset = () => {
+        setSearchName('');
+        setSelectedPosition('');
+        setSelectedClub('');
+        setSelectedNationality('');
+        setPagination({ ...pagination, current: 1 });
+    };
+
+    // Table columns definition
     const columns = [
         {
-            title: "Name",
-            dataIndex: "name",
-            key: "name",
-            render: (text, record) => <Link to={`/players/${record.id}`}>{text}</Link>,
-            sorter: (a, b) => a.name.localeCompare(b.name)
+            title: '',
+            dataIndex: 'imagePath',
+            key: 'image',
+            width: '70px',
+            render: (imagePath, record) => (
+                <Link to={`/players/${record.id}`}>
+                    <Avatar 
+                        src={imagePath ? getImageUrl(imagePath) : null} 
+                        size={50} 
+                        alt={record.name}
+                    >
+                        {!imagePath ? record.name.charAt(0) : null}
+                    </Avatar>
+                </Link>
+            ),
         },
         {
-            title: "Age",
-            dataIndex: "age",
-            key: "age",
-            sorter: (a, b) => a.age - b.age
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            render: (text, record) => <Link to={`/players/${record.id}`}>{text}</Link>
         },
         {
-            title: "Shirt Number",
-            dataIndex: "shirtNumber",
-            key: "shirtNumber",
-            sorter: (a, b) => (a.shirtNumber || 0) - (b.shirtNumber || 0)
+            title: 'Age',
+            dataIndex: 'age',
+            key: 'age',
+            width: '80px',
         },
         {
-            title: "Citizenship",
-            dataIndex: "citizenships",
-            key: "citizenships",
-            render: (citizenships) => {
-                if (!citizenships || !Array.isArray(citizenships)) return "-";
-                return (
-                    <span>
-                        {citizenships.map(country => (
-                            <Tag key={country} color="green" style={{marginBottom: "5px"}}>
-                                <Link to={`/players?citizenship=${encodeURIComponent(country)}`}>
-                                    {country}
-                                </Link>
-                            </Tag>
-                        ))}
-                    </span>
-                );
-            },
-            sorter: (a, b) => {
-                const aStr = Array.isArray(a.citizenships) ? a.citizenships.join(', ') : '';
-                const bStr = Array.isArray(b.citizenships) ? b.citizenships.join(', ') : '';
-                return aStr.localeCompare(bStr);
-            }
+            title: 'Position',
+            key: 'positions',
+            dataIndex: 'positions',
+            render: (positions) => (
+                <>
+                    {Array.isArray(positions) ? positions.map((position, index) => (
+                        <Tag color="blue" key={index}>
+                            {position}
+                        </Tag>
+                    )) : positions && (
+                        <Tag color="blue">
+                            {positions}
+                        </Tag>
+                    )}
+                </>
+            ),
         },
         {
-            title: "Position",
-            dataIndex: "positions",
-            key: "positions",
-            render: (positions) => {
-                if (!positions || !Array.isArray(positions)) return "-";
-                return (
-                    <span>
-                        {positions.map(pos => (
-                            <Tag key={pos} color="blue" style={{marginBottom: "5px"}}>
-                                <Link to={`/players?position=${encodeURIComponent(pos)}`}>
-                                    {pos}
-                                </Link>
-                            </Tag>
-                        ))}
-                    </span>
-                );
-            },
-            sorter: (a, b) => {
-                const aStr = Array.isArray(a.positions) ? a.positions.join(', ') : '';
-                const bStr = Array.isArray(b.positions) ? b.positions.join(', ') : '';
-                return aStr.localeCompare(bStr);
-            }
+            title: 'Club',
+            key: 'club',
+            dataIndex: 'club',
+            render: (club) => club ? club.name : 'No club'
         },
         {
-            title: "Club",
-            dataIndex: "currentClub",
-            key: "club",
-            sorter: (a, b) => {
-                const aClub = a.currentClub || '';
-                const bClub = b.currentClub || '';
-                return aClub.localeCompare(bClub);
-            }
+            title: 'Nationality',
+            key: 'citizenship',
+            dataIndex: 'citizenships',
+            render: (citizenships) => (
+                <>
+                    {Array.isArray(citizenships) ? citizenships.map((citizenship, index) => (
+                        <Tag color="green" key={index}>
+                            {citizenship}
+                        </Tag>
+                    )) : citizenships && (
+                        <Tag color="green">
+                            {citizenships}
+                        </Tag>
+                    )}
+                </>
+            ),
         },
         {
-            title: "Market Value",
-            dataIndex: "marketValue",
-            key: "marketValue",
-            render: (value) => `${value} m€`,
-            sorter: (a, b) => (a.marketValue || 0) - (b.marketValue || 0)
-        }
+            title: 'Market Value',
+            dataIndex: 'marketValue',
+            key: 'marketValue',
+            render: (value) => value ? `€${value.toLocaleString()}m` : '-'
+        },
     ];
 
     return (
-        <>
-            {filterInfo && (
-                <Card style={{ marginBottom: 16 }}>
-                    <Alert
-                        message={filterInfo}
-                        type="info"
-                        showIcon
-                        action={
-                            <Button type="link" href="/players">Clear filters</Button>
-                        }
-                    />
-                </Card>
-            )}
-            <Card title="Player Table">
-                <Table
-                    columns={columns}
-                    dataSource={players}
-                    rowKey="id"
-                    pagination={{
-                        ...pagination,
-                        showSizeChanger: true,
-                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`
-                    }}
-                    loading={loading}
-                    onChange={handleTableChange}
-                />
-            </Card>
-        </>
+        <div>
+            {/* Filters */}
+            <div style={{ marginBottom: 20 }}>
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12} md={6}>
+                        <Input 
+                            placeholder="Search by name"
+                            value={searchName}
+                            onChange={e => setSearchName(e.target.value)}
+                            allowClear
+                        />
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Select 
+                            placeholder="Filter by position"
+                            style={{ width: '100%' }}
+                            value={selectedPosition || undefined}
+                            onChange={setSelectedPosition}
+                            allowClear
+                        >
+                            {positions.map(position => (
+                                <Option key={position} value={position}>{position}</Option>
+                            ))}
+                        </Select>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Select 
+                            placeholder="Filter by club"
+                            style={{ width: '100%' }}
+                            value={selectedClub || undefined}
+                            onChange={setSelectedClub}
+                            allowClear
+                            showSearch
+                            optionFilterProp="children"
+                        >
+                            {clubs.map(club => (
+                                <Option key={club.id} value={club.id}>{club.name}</Option>
+                            ))}
+                        </Select>
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                        <Select 
+                            placeholder="Filter by nationality"
+                            style={{ width: '100%' }}
+                            value={selectedNationality || undefined}
+                            onChange={setSelectedNationality}
+                            allowClear
+                            showSearch
+                            optionFilterProp="children"
+                        >
+                            {nationalities.map(nationality => (
+                                <Option key={nationality} value={nationality}>{nationality}</Option>
+                            ))}
+                        </Select>
+                    </Col>
+                </Row>
+                <div style={{ marginTop: 16, textAlign: 'right' }}>
+                    <Button type="primary" onClick={handleSearch} icon={<SearchOutlined />} style={{ marginRight: 8 }}>
+                        Search
+                    </Button>
+                    <Button onClick={handleReset}>
+                        Reset
+                    </Button>
+                </div>
+            </div>
+
+            {/* Players Table */}
+            <Table 
+                columns={columns} 
+                dataSource={players}
+                rowKey="id"
+                pagination={pagination}
+                onChange={handleTableChange}
+                loading={loading}
+                scroll={{ x: 'max-content' }}
+            />
+        </div>
     );
 };
 

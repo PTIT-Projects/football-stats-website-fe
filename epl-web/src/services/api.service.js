@@ -1,524 +1,411 @@
-import axios from "./axios.customize";
-// import axios from "axios";
-const loginAPI = (email, password) => {
-    const URL_BACKEND = "/api/v1/auth/login";
-    const data = {
-        username: email,
-        password: password
-    }
-    return axios.post(URL_BACKEND, data)
+import axios from './axios.customize';
 
-}
-const registerUserAPI = (fullName,email,password) =>{
-    const URL_BACKEND = "/api/v1/auth/register";
-    const data = {
-        name:fullName,
-        email:email,
-        password:password,
-    }
-    return  axios.post(URL_BACKEND,data);
-}
+// Base URLs
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || "http://localhost:8080/images";
 
-const fetchAllPlayersAPI = (currentOrParams, pageSize) => {
-    // Check if first parameter is an object (params) or a number (current page)
-    if (typeof currentOrParams === 'object') {
-        const params = currentOrParams;
-        let url = `/api/v1/players?sortTransferHistory=true`;
-
-        // Add pagination parameters
-        if (params.page) url += `&page=${params.page}`;
-        if (params.size) url += `&size=${params.size}`;
-
-        // Add filter if present
-        if (params.filter) url += `&filter=${encodeURIComponent(params.filter)}`;
-
-        // Add sort if present
-        if (params.sort) url += `&sort=${encodeURIComponent(params.sort)}`;
-
-        return axios.get(url);
-    } else {
-        // Original implementation for backward compatibility
-        const URL_BACKEND = `/api/v1/players?page=${currentOrParams}&size=${pageSize}&sortTransferHistory=true`;
-        return axios.get(URL_BACKEND);
-    }
-}
-const fetchAllPlayersNoPaginationAPI = () => {
-    const URL_BACKEND = `/api/v1/players`;
-    return axios.get(URL_BACKEND);
-}
-
-// Add these to existing export functions
-const createPlayerAPI = (playerData) => {
-    const URL_BACKEND = "/api/v1/players";
-    return axios.post(URL_BACKEND, playerData);
-}
-
-const updatePlayerAPI = (playerData) => {
-    const URL_BACKEND = `/api/v1/players`;
-    return axios.put(URL_BACKEND, playerData);
-}
-
-const deletePlayerAPI = (id) => {
-    const URL_BACKEND = `/api/v1/players/${id}`;
-    return axios.delete(URL_BACKEND);
-}
-
-const getAccountAPI = () => {
-    const URL_BACKEND = "/api/v1/auth/account";
-    return axios.get(URL_BACKEND);
-}
-
-const logoutAPI = () => {
-    const URL_BACKEND = "/api/v1/auth/logout";
-    return axios.post(URL_BACKEND);
-}
-const fetchPlayerDetailAPI = (id) => {
-    const URL_BACKEND = `/api/v1/players/${id}?sortTransferHistory=true`;
-    return axios.get(URL_BACKEND);
-}
-const fetchAllClubsAPI = () => {
-    const URL_BACKEND = `/api/v1/clubs`;
-    return axios.get(URL_BACKEND);
-}
-const updateTransferAPI = (data) => {
-    const URL_BACKEND = `/api/v1/transfers`;
-    return axios.put(URL_BACKEND, data);
-};
-const deleteTransferAPI = (id) => {
-    const URL_BACKEND = `/api/v1/transfers/${id}`;
-    return axios.delete(URL_BACKEND);
-}
-const fetchAllClubsWithPaginationAPI = (currentOrParams, pageSize) => {
-    // Check if first parameter is an object (params) or a number (current page)
-    if (typeof currentOrParams === 'object') {
-        const params = currentOrParams;
-        let url = `/api/v1/clubs?`;
-
-        // Add pagination parameters
-        if (params.page) url += `&page=${params.page}`;
-        if (params.size) url += `&size=${params.size}`;
-
-        // Add filter if present
-        if (params.filter) url += `&filter=${encodeURIComponent(params.filter)}`;
-
-        // Add sort if present
-        if (params.sort) url += `&sort=${encodeURIComponent(params.sort)}`;
-
-        return axios.get(url);
-    } else {
-        // Original implementation
-        const URL_BACKEND = `/api/v1/clubs?page=${currentOrParams}&size=${pageSize}`;
-        return axios.get(URL_BACKEND);
-    }
-}
-const fetchClubDetailAPI = (id) => {
-    const URL_BACKEND = `/api/v1/clubs/${id}`;
-    return axios.get(URL_BACKEND);
-}
-const createClubAPI = (data) => {
-    const URL_BACKEND = `/api/v1/clubs`;
-    return axios.post(URL_BACKEND, data);
-}
-const editClubAPI = (data) => {
-    const URL_BACKEND = `/api/v1/clubs`;
-    return axios.put(URL_BACKEND, data);
-}
-const deleteClubAPI = (id) => {
-    const URL_BACKEND = `/api/v1/clubs/${id}`;
-    return axios.delete(URL_BACKEND);
-}
-const fetchAllCoachesAPI = (currentOrParams, pageSize) => {
-    // Check if first parameter is an object (params) or a number (current page)
-    if (typeof currentOrParams === 'object') {
-        const params = currentOrParams;
-        let url = `/api/v1/coaches?sortTransferHistory=true`;
-
-        // Add pagination parameters
-        if (params.page) url += `&page=${params.page}`;
-        if (params.size) url += `&size=${params.size}`;
-
-        // Add filter if present
-        if (params.filter) url += `&filter=${encodeURIComponent(params.filter)}`;
-
-        // Add sort if present
-        if (params.sort) url += `&sort=${encodeURIComponent(params.sort)}`;
-
-        return axios.get(url);
-    } else {
-        // Original implementation
-        const URL_BACKEND = `/api/v1/coaches?page=${currentOrParams}&size=${pageSize}&sortTransferHistory=true`;
-        return axios.get(URL_BACKEND);
-    }
-}
-const fetchCoachDetailAPI = (id) => {
-    const URL_BACKEND = `/api/v1/coaches/${id}?sortCoachClubs=true`;
-    return axios.get(URL_BACKEND);
-}
-const createTransferHistoryAPI = (data) => {
-    const URL_BACKEND = `/api/v1/transfers`;
-    return axios.post(URL_BACKEND, data);
-}
-const createCoachAPI = (data) => {
-    const URL_BACKEND = `/api/v1/coaches`;
-    return axios.post(URL_BACKEND, data);
-}
-const updateCoachAPI = (data) => {
-    const URL_BACKEND = `/api/v1/coaches`;
-    return axios.put(URL_BACKEND, data);
-}
-const deleteCoachAPI = (id) => {
-    const URL_BACKEND = `/api/v1/coaches/${id}`;
-    return axios.delete(URL_BACKEND);
-}
-// Coach Club API endpoints
-const createCoachClubAPI = (data) => {
-    const URL_BACKEND = `/api/v1/coach-clubs`;
-    return axios.post(URL_BACKEND, data);
+// Player APIs
+export const getPlayersAPI = () => {
+    return axios.get(`${API_URL}/players`);
 };
 
-const updateCoachClubAPI = (data) => {
-    const URL_BACKEND = `/api/v1/coach-clubs`;
-    return axios.put(URL_BACKEND, data);
+export const getPlayerAPI = (id) => {
+    return axios.get(`${API_URL}/players/${id}`);
 };
 
-const deleteCoachClubAPI = (id) => {
-    const URL_BACKEND = `/api/v1/coach-clubs/${id}`;
-    return axios.delete(URL_BACKEND);
+export const createPlayerAPI = (player) => {
+    return axios.post(`${API_URL}/players`, player);
 };
 
-const fetchAllLeaguesAPI = (currentOrParams, pageSize) => {
-    // Check if first parameter is an object (params) or a number (current page)
-    if (typeof currentOrParams === 'object') {
-        const params = currentOrParams;
-        let url = `/api/v1/leagues?`;
-
-        // Add pagination parameters
-        if (params.page) url += `&page=${params.page}`;
-        if (params.size) url += `&size=${params.size}`;
-
-        // Add filter if present
-        if (params.filter) url += `&filter=${encodeURIComponent(params.filter)}`;
-
-        // Add sort if present
-        if (params.sort) url += `&sort=${encodeURIComponent(params.sort)}`;
-
-        return axios.get(url);
-    } else {
-        // Original implementation
-        const URL_BACKEND = `/api/v1/leagues?page=${currentOrParams}&size=${pageSize}`;
-        return axios.get(URL_BACKEND);
-    }
-}
-
-const createLeagueAPI = (leagueData) => {
-    const URL_BACKEND = "/api/v1/leagues";
-    return axios.post(URL_BACKEND, leagueData);
-}
-
-const updateLeagueAPI = (leagueData) => {
-    const URL_BACKEND = `/api/v1/leagues`;
-    return axios.put(URL_BACKEND, leagueData);
-}
-
-const deleteLeagueAPI = (id) => {
-    const URL_BACKEND = `/api/v1/leagues/${id}`;
-    return axios.delete(URL_BACKEND);
-}
-
-const fetchLeagueDetailAPI = (id) => {
-    const URL_BACKEND = `/api/v1/leagues/${id}`;
-    return axios.get(URL_BACKEND);
-}
-const createLeagueSeasonAPI = (data) => {
-    const URL_BACKEND = `/api/v1/league-seasons`;
-    return axios.post(URL_BACKEND, data);
-}
-
-const updateLeagueSeasonAPI = (data) => {
-    const URL_BACKEND = `/api/v1/league-seasons`;
-    return axios.put(URL_BACKEND, data);
-}
-
-const deleteLeagueSeasonAPI = (id) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${id}`;
-    return axios.delete(URL_BACKEND);
-}
-
-// League Season detailed API endpoints
-const fetchLeagueSeasonDetailAPI = (id) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${id}`;
-    return axios.get(URL_BACKEND);
-};
-
-const createClubSeasonTableAPI = (data) => {
-    const URL_BACKEND = `/api/v1/club-season-tables`;
-    return axios.post(URL_BACKEND, data);
-};
-
-const updateClubSeasonTableAPI = (data) => {
-    const URL_BACKEND = `/api/v1/club-season-tables`;
-    return axios.put(URL_BACKEND, data);
-};
-const deleteClubSeasonTableAPI = (id) => {
-    const URL_BACKEND = `/api/v1/club-season-tables/${id}`;
-    return axios.delete(URL_BACKEND);
-}
-
-// Match API endpoints
-const fetchMatchesBySeasonAPI = (seasonId) => {
-    const URL_BACKEND = `/api/v1/matches?filter=season:${seasonId}&sort=round,asc`;
-    return axios.get(URL_BACKEND);
-};
-
-const fetchMatchDetailAPI = (id) => {
-    const URL_BACKEND = `/api/v1/matches/${id}`;
-    return axios.get(URL_BACKEND);
-};
-
-const createMatchAPI = (data) => {
-    const URL_BACKEND = `/api/v1/matches`;
-    return axios.post(URL_BACKEND, data);
-};
-
-const updateMatchAPI = (data) => {
-    const URL_BACKEND = `/api/v1/matches`;
-    return axios.put(URL_BACKEND, data);
-};
-
-const deleteMatchAPI = (id) => {
-    const URL_BACKEND = `/api/v1/matches/${id}`;
-    return axios.delete(URL_BACKEND);
-};
-
-// Match Action API endpoints
-const fetchMatchActionsAPI = (matchId) => {
-    const URL_BACKEND = `/api/v1/match-actions?filter=match:${matchId}`;
-    return axios.get(URL_BACKEND);
-};
-
-const createMatchActionAPI = (data) => {
-    const URL_BACKEND = `/api/v1/match-actions`;
-    return axios.post(URL_BACKEND, data);
-};
-
-const updateMatchActionAPI = (data) => {
-    const URL_BACKEND = `/api/v1/match-actions`;
-    return axios.put(URL_BACKEND, data);
-};
-
-const deleteMatchActionAPI = (id) => {
-    const URL_BACKEND = `/api/v1/match-actions/${id}`;
-    return axios.delete(URL_BACKEND);
-};
-
-const getTopGoalScorerAPI = (seasonId) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${seasonId}/top-goal-scorers`;
-    return axios.get(URL_BACKEND);
-}
-
-const getTopAssistsAPI = (seasonId) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${seasonId}/top-assists`;
-    return axios.get(URL_BACKEND);
-}
-const getTopYellowCardsAPI = (seasonId) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${seasonId}/top-yellow-cards`;
-    return axios.get(URL_BACKEND);
-}
-const getTopRedCardsAPI = (seasonId) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${seasonId}/top-red-cards`;
-    return axios.get(URL_BACKEND);
-}
-
-const getClubSquadAPI = (clubId, seasonId) => {
-    const URL_BACKEND = `/api/v1/clubs/${clubId}/squad?seasonId=${seasonId}`;
-    return axios.get(URL_BACKEND);
-};
-
-const getClubTransfersAPI = (clubId, seasonId) => {
-    const URL_BACKEND = `/api/v1/clubs/${clubId}/transfers?seasonId=${seasonId}`;
-    return axios.get(URL_BACKEND);
-};
-const getClubSeasonsAPI = (clubId) => {
-    const URL_BACKEND = `/api/v1/clubs/${clubId}/seasons`;
-    return axios.get(URL_BACKEND);
-}
-
-// Get club top scorers for a specific season
-const getClubTopScorersAPI = (seasonId, clubId) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${seasonId}/clubs/${clubId}/top-goal-scorers`;
-    return axios.get(URL_BACKEND);
-};
-
-// Get club top assists for a specific season
-const getClubTopAssistsAPI = (seasonId, clubId) => {
-    const URL_BACKEND = `/api/v1/league-seasons/${seasonId}/clubs/${clubId}/top-assists`;
-    return axios.get(URL_BACKEND);
-};
-
-// File Upload API calls
-// Helper function to build multipart/form-data request with both JSON and file
-const createFormDataRequest = (jsonData, imageFile) => {
+// Function to handle player creation with image upload
+export const createPlayerWithImageAPI = (playerData, imageFile) => {
     const formData = new FormData();
     
-    // Add JSON data as 'data' field
-    formData.append('data', new Blob([JSON.stringify(jsonData)], { type: 'application/json' }));
+    // Add player data as JSON string
+    formData.append('player', new Blob([JSON.stringify(playerData)], { type: 'application/json' }));
     
-    // Add image file if it exists
+    // Add image file if provided
     if (imageFile) {
         formData.append('image', imageFile);
     }
     
-    return formData;
-};
-
-// Player API with image upload
-const createPlayerWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/players`;
-    const formData = createFormDataRequest(jsonData, imageFile);
-    
-    return axios.post(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    return axios.post(`${API_URL}/players/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-const updatePlayerWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/players`;
-    const formData = createFormDataRequest(jsonData, imageFile);
+export const updatePlayerAPI = (id, player) => {
+    return axios.put(`${API_URL}/players/${id}`, player);
+};
+
+// Function to handle player update with image upload
+export const updatePlayerWithImageAPI = (id, playerData, imageFile) => {
+    const formData = new FormData();
     
-    return axios.put(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    // Add player data as JSON string
+    formData.append('player', new Blob([JSON.stringify(playerData)], { type: 'application/json' }));
+    
+    // Add image file if provided
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return axios.put(`${API_URL}/players/${id}/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-// Coach API with image upload
-const createCoachWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/coaches`;
-    const formData = createFormDataRequest(jsonData, imageFile);
+export const deletePlayerAPI = (id) => {
+    return axios.delete(`${API_URL}/players/${id}`);
+};
+
+export const fetchPlayerDetailAPI = (id) => {
+    return axios.get(`${API_URL}/players/${id}`);
+};
+
+export const getSearchPlayersAPI = (filters) => {
+    return axios.post(`${API_URL}/players/search`, filters);
+};
+
+// Coach APIs
+export const getCoachesAPI = () => {
+    return axios.get(`${API_URL}/coaches`);
+};
+
+export const getCoachAPI = (id) => {
+    return axios.get(`${API_URL}/coaches/${id}`);
+};
+
+export const createCoachAPI = (coach) => {
+    return axios.post(`${API_URL}/coaches`, coach);
+};
+
+// Function to handle coach creation with image upload
+export const createCoachWithImageAPI = (coachData, imageFile) => {
+    const formData = new FormData();
     
-    return axios.post(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    // Add coach data as JSON string
+    formData.append('coach', new Blob([JSON.stringify(coachData)], { type: 'application/json' }));
+    
+    // Add image file if provided
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return axios.post(`${API_URL}/coaches/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-const updateCoachWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/coaches`;
-    const formData = createFormDataRequest(jsonData, imageFile);
+export const updateCoachAPI = (id, coach) => {
+    return axios.put(`${API_URL}/coaches/${id}`, coach);
+};
+
+// Function to handle coach update with image upload
+export const updateCoachWithImageAPI = (id, coachData, imageFile) => {
+    const formData = new FormData();
     
-    return axios.put(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    // Add coach data as JSON string
+    formData.append('coach', new Blob([JSON.stringify(coachData)], { type: 'application/json' }));
+    
+    // Add image file if provided
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return axios.put(`${API_URL}/coaches/${id}/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-// Club API with image upload
-const createClubWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/clubs`;
-    const formData = createFormDataRequest(jsonData, imageFile);
+export const deleteCoachAPI = (id) => {
+    return axios.delete(`${API_URL}/coaches/${id}`);
+};
+
+export const fetchCoachDetailAPI = (id) => {
+    return axios.get(`${API_URL}/coaches/${id}`);
+};
+
+export const getSearchCoachesAPI = (filters) => {
+    return axios.post(`${API_URL}/coaches/search`, filters);
+};
+
+// Club APIs
+export const getClubsAPI = () => {
+    return axios.get(`${API_URL}/clubs`);
+};
+
+export const getClubAPI = (id) => {
+    return axios.get(`${API_URL}/clubs/${id}`);
+};
+
+export const createClubAPI = (club) => {
+    return axios.post(`${API_URL}/clubs`, club);
+};
+
+// Function to handle club creation with image upload
+export const createClubWithImageAPI = (clubData, imageFile) => {
+    const formData = new FormData();
     
-    return axios.post(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    // Add club data as JSON string
+    formData.append('club', new Blob([JSON.stringify(clubData)], { type: 'application/json' }));
+    
+    // Add image file if provided
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return axios.post(`${API_URL}/clubs/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-const updateClubWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/clubs`;
-    const formData = createFormDataRequest(jsonData, imageFile);
+export const updateClubAPI = (id, club) => {
+    return axios.put(`${API_URL}/clubs/${id}`, club);
+};
+
+// Function to handle club update with image upload
+export const updateClubWithImageAPI = (id, clubData, imageFile) => {
+    const formData = new FormData();
     
-    return axios.put(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    // Add club data as JSON string
+    formData.append('club', new Blob([JSON.stringify(clubData)], { type: 'application/json' }));
+    
+    // Add image file if provided
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return axios.put(`${API_URL}/clubs/${id}/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-// League API with image upload
-const createLeagueWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/leagues`;
-    const formData = createFormDataRequest(jsonData, imageFile);
+export const deleteClubAPI = (id) => {
+    return axios.delete(`${API_URL}/clubs/${id}`);
+};
+
+export const fetchClubDetailAPI = (id) => {
+    return axios.get(`${API_URL}/clubs/${id}`);
+};
+
+export const getSearchClubsAPI = (filters) => {
+    return axios.post(`${API_URL}/clubs/search`, filters);
+};
+
+export const getClubSeasonsAPI = (clubId) => {
+    return axios.get(`${API_URL}/clubs/${clubId}/seasons`);
+};
+
+export const getClubSquadAPI = (clubId, seasonId) => {
+    return axios.get(`${API_URL}/clubs/${clubId}/squad?seasonId=${seasonId}`);
+};
+
+export const getClubTransfersAPI = (clubId, seasonId) => {
+    return axios.get(`${API_URL}/clubs/${clubId}/transfers?seasonId=${seasonId}`);
+};
+
+// League APIs
+export const getLeaguesAPI = () => {
+    return axios.get(`${API_URL}/leagues`);
+};
+
+export const getLeagueAPI = (id) => {
+    return axios.get(`${API_URL}/leagues/${id}`);
+};
+
+export const createLeagueAPI = (league) => {
+    return axios.post(`${API_URL}/leagues`, league);
+};
+
+// Function to handle league creation with image upload
+export const createLeagueWithImageAPI = (leagueData, imageFile) => {
+    const formData = new FormData();
     
-    return axios.post(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    // Add league data as JSON string
+    formData.append('league', new Blob([JSON.stringify(leagueData)], { type: 'application/json' }));
+    
+    // Add image file if provided
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return axios.post(`${API_URL}/leagues/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-const updateLeagueWithImageAPI = (jsonData, imageFile) => {
-    const URL_BACKEND = `/api/v1/leagues`;
-    const formData = createFormDataRequest(jsonData, imageFile);
+export const updateLeagueAPI = (id, league) => {
+    return axios.put(`${API_URL}/leagues/${id}`, league);
+};
+
+// Function to handle league update with image upload
+export const updateLeagueWithImageAPI = (id, leagueData, imageFile) => {
+    const formData = new FormData();
     
-    return axios.put(URL_BACKEND, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+    // Add league data as JSON string
+    formData.append('league', new Blob([JSON.stringify(leagueData)], { type: 'application/json' }));
+    
+    // Add image file if provided
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    return axios.put(`${API_URL}/leagues/${id}/with-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
     });
 };
 
-// Helper to get image URL
-const getImageUrl = (imagePath) => {
+export const deleteLeagueAPI = (id) => {
+    return axios.delete(`${API_URL}/leagues/${id}`);
+};
+
+export const fetchLeagueDetailAPI = (id) => {
+    return axios.get(`${API_URL}/leagues/${id}`);
+};
+
+// League Season APIs
+export const createLeagueSeasonAPI = (leagueSeason) => {
+    return axios.post(`${API_URL}/league-seasons`, leagueSeason);
+};
+
+export const updateLeagueSeasonAPI = (id, leagueSeason) => {
+    return axios.put(`${API_URL}/league-seasons/${id}`, leagueSeason);
+};
+
+export const deleteLeagueSeasonAPI = (id) => {
+    return axios.delete(`${API_URL}/league-seasons/${id}`);
+};
+
+export const fetchLeagueSeasonDetailAPI = (id) => {
+    return axios.get(`${API_URL}/league-seasons/${id}`);
+};
+
+// Coach Club APIs
+export const createCoachClubAPI = (coachClub) => {
+    return axios.post(`${API_URL}/coach-clubs`, coachClub);
+};
+
+export const updateCoachClubAPI = (id, coachClub) => {
+    return axios.put(`${API_URL}/coach-clubs/${id}`, coachClub);
+};
+
+export const deleteCoachClubAPI = (id) => {
+    return axios.delete(`${API_URL}/coach-clubs/${id}`);
+};
+
+// Transfer History APIs
+export const createTransferHistoryAPI = (transfer) => {
+    return axios.post(`${API_URL}/transfers`, transfer);
+};
+
+export const updateTransferHistoryAPI = (id, transfer) => {
+    return axios.put(`${API_URL}/transfers/${id}`, transfer);
+};
+
+export const deleteTransferHistoryAPI = (id) => {
+    return axios.delete(`${API_URL}/transfers/${id}`);
+};
+
+// League Season Club APIs
+export const getLeagueSeasonClubsAPI = (leagueSeasonId) => {
+    return axios.get(`${API_URL}/league-seasons/${leagueSeasonId}/clubs`);
+};
+
+export const addClubToLeagueSeasonAPI = (leagueSeasonId, clubId) => {
+    return axios.post(`${API_URL}/league-seasons/${leagueSeasonId}/clubs/${clubId}`);
+};
+
+export const removeClubFromLeagueSeasonAPI = (leagueSeasonId, clubId) => {
+    return axios.delete(`${API_URL}/league-seasons/${leagueSeasonId}/clubs/${clubId}`);
+};
+
+// Match APIs
+export const createMatchAPI = (match) => {
+    return axios.post(`${API_URL}/matches`, match);
+};
+
+export const getMatchesForLeagueSeasonAPI = (leagueSeasonId) => {
+    return axios.get(`${API_URL}/league-seasons/${leagueSeasonId}/matches`);
+};
+
+export const getMatchDetailAPI = (matchId) => {
+    return axios.get(`${API_URL}/matches/${matchId}`);
+};
+
+export const updateMatchAPI = (matchId, match) => {
+    return axios.put(`${API_URL}/matches/${matchId}`, match);
+};
+
+export const deleteMatchAPI = (matchId) => {
+    return axios.delete(`${API_URL}/matches/${matchId}`);
+};
+
+// Match Action APIs
+export const addMatchActionAPI = (matchId, action) => {
+    return axios.post(`${API_URL}/matches/${matchId}/actions`, action);
+};
+
+export const updateMatchActionAPI = (actionId, action) => {
+    return axios.put(`${API_URL}/match-actions/${actionId}`, action);
+};
+
+export const deleteMatchActionAPI = (actionId) => {
+    return axios.delete(`${API_URL}/match-actions/${actionId}`);
+};
+
+// League Statistics APIs
+export const getTopGoalScorerAPI = (leagueSeasonId) => {
+    return axios.get(`${API_URL}/league-seasons/${leagueSeasonId}/statistics/top-scorers`);
+};
+
+export const getTopAssistsAPI = (leagueSeasonId) => {
+    return axios.get(`${API_URL}/league-seasons/${leagueSeasonId}/statistics/top-assists`);
+};
+
+export const getTopYellowCardsAPI = (leagueSeasonId) => {
+    return axios.get(`${API_URL}/league-seasons/${leagueSeasonId}/statistics/top-yellow-cards`);
+};
+
+export const getTopRedCardsAPI = (leagueSeasonId) => {
+    return axios.get(`${API_URL}/league-seasons/${leagueSeasonId}/statistics/top-red-cards`);
+};
+
+// Authentication APIs
+export const loginAPI = (credentials) => {
+    return axios.post(`${API_URL}/auth/login`, credentials);
+};
+
+export const registerAPI = (user) => {
+    return axios.post(`${API_URL}/auth/register`, user);
+};
+
+// Helper function to get the full URL for an image
+export const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
-    return `/api/v1/images/${imagePath}`;
+    
+    // If the imagePath is already a full URL, return it as is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+    }
+    
+    // Otherwise, prepend the image base URL
+    return `${IMAGE_BASE_URL}/${imagePath}`;
 };
-
-export {
-    loginAPI,
-    registerUserAPI,
-    logoutAPI,
-    getAccountAPI,
-    fetchAllPlayersAPI,
-    fetchPlayerDetailAPI,
-    createPlayerAPI,
-    updatePlayerAPI,
-    deletePlayerAPI,
-    fetchAllClubsAPI,
-    updateTransferAPI,
-    deleteTransferAPI,
-    fetchAllClubsWithPaginationAPI,
-    fetchClubDetailAPI,
-    createClubAPI,
-    editClubAPI,
-    deleteClubAPI,
-    fetchAllCoachesAPI,
-    fetchCoachDetailAPI,
-    createCoachAPI,
-    updateCoachAPI,
-    deleteCoachAPI,
-    createTransferHistoryAPI,
-    createCoachClubAPI,
-    updateCoachClubAPI,
-    deleteCoachClubAPI,
-    fetchAllLeaguesAPI,
-    createLeagueAPI,
-    updateLeagueAPI,
-    deleteLeagueAPI,
-    fetchLeagueDetailAPI,
-    createLeagueSeasonAPI,
-    updateLeagueSeasonAPI,
-    deleteLeagueSeasonAPI,
-    fetchLeagueSeasonDetailAPI,
-    createClubSeasonTableAPI,
-    updateClubSeasonTableAPI,
-    deleteClubSeasonTableAPI,
-    fetchMatchesBySeasonAPI,
-    fetchMatchDetailAPI,
-    createMatchAPI,
-    updateMatchAPI,
-    deleteMatchAPI,
-    fetchMatchActionsAPI,
-    createMatchActionAPI,
-    updateMatchActionAPI,
-    deleteMatchActionAPI,
-    fetchAllPlayersNoPaginationAPI,
-    getTopGoalScorerAPI,
-    getTopAssistsAPI,
-    getTopYellowCardsAPI,
-    getTopRedCardsAPI,
-    getClubSquadAPI,
-    getClubTransfersAPI,
-    getClubSeasonsAPI,
-    getClubTopScorersAPI,
-    getClubTopAssistsAPI,
-    createPlayerWithImageAPI,
-    updatePlayerWithImageAPI,
-    createCoachWithImageAPI,
-    updateCoachWithImageAPI,
-    createClubWithImageAPI,
-    updateClubWithImageAPI,
-    createLeagueWithImageAPI,
-    updateLeagueWithImageAPI,
-    getImageUrl
-}
 
