@@ -1,18 +1,24 @@
 import { Button, Form, message, Modal } from "antd";
 import { useEffect, useState } from "react";
-import { updateLeagueAPI } from "../../../services/api.service.js";
+import { updateLeagueAPI, updateLeagueWithImageAPI } from "../../../services/api.service.js";
 import LeagueForm from "./league.form.jsx";
 
 const EditLeagueModal = ({ isOpen, onCancel, onSuccess, league }) => {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
 
     // Reset form when modal closes
     useEffect(() => {
         if (!isOpen) {
             form.resetFields();
+            setImageFile(null);
         }
     }, [isOpen, form]);
+
+    const handleImageChange = (file) => {
+        setImageFile(file);
+    };
 
     const handleSubmit = async () => {
         try {
@@ -24,9 +30,17 @@ const EditLeagueModal = ({ isOpen, onCancel, onSuccess, league }) => {
                 id: league.id
             };
 
-            const res = await updateLeagueAPI(formattedValues);
+            // Use the image upload API if an image is selected
+            let res;
+            if (imageFile) {
+                res = await updateLeagueWithImageAPI(formattedValues, imageFile);
+            } else {
+                res = await updateLeagueAPI(formattedValues);
+            }
+
             if (res.data) {
                 message.success("League updated successfully");
+                setImageFile(null);
                 onSuccess();
                 onCancel();
             } else {
@@ -66,6 +80,7 @@ const EditLeagueModal = ({ isOpen, onCancel, onSuccess, league }) => {
                     form={form}
                     initialValues={league}
                     formName="editLeagueForm"
+                    onImageChange={handleImageChange}
                 />
             )}
         </Modal>

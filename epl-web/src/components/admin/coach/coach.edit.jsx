@@ -1,18 +1,24 @@
 import {Button, Form, message, Modal} from "antd";
 import {useEffect, useState} from "react";
-import {updateCoachAPI} from "../../../services/api.service.js";
+import {updateCoachAPI, updateCoachWithImageAPI} from "../../../services/api.service.js";
 import CoachForm from "./coach.form.jsx";
 
 const EditCoachModal = ({ isOpen, onCancel, onSuccess, coach }) => {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
 
     // Reset form when modal closes
     useEffect(() => {
         if (!isOpen) {
             form.resetFields();
+            setImageFile(null);
         }
     }, [isOpen, form]);
+
+    const handleImageChange = (file) => {
+        setImageFile(file);
+    };
 
     const handleSubmit = async () => {
         try {
@@ -26,16 +32,24 @@ const EditCoachModal = ({ isOpen, onCancel, onSuccess, coach }) => {
                 id: coach.id
             };
 
-            console.log('Submitting player update:', formattedValues);
+            console.log('Submitting coach update:', formattedValues);
 
-            const res = await updateCoachAPI(formattedValues);
+            // Use the image upload API if an image is selected or changed
+            let res;
+            if (imageFile) {
+                res = await updateCoachWithImageAPI(formattedValues, imageFile);
+            } else {
+                res = await updateCoachAPI(formattedValues);
+            }
+
             if (res.data) {
                 message.success("Coach updated successfully");
+                setImageFile(null);
                 // Call onSuccess to trigger table reload
                 onSuccess();
                 onCancel(); // Close the modal
             } else {
-                message.error("Failed to update player");
+                message.error("Failed to update coach");
             }
         } catch (error) {
             console.error("Form validation or submission error:", error);
@@ -47,7 +61,7 @@ const EditCoachModal = ({ isOpen, onCancel, onSuccess, coach }) => {
 
     return (
         <Modal
-            title="Edit Player"
+            title="Edit Coach"
             open={isOpen}
             onCancel={onCancel}
             footer={[
@@ -71,6 +85,7 @@ const EditCoachModal = ({ isOpen, onCancel, onSuccess, coach }) => {
                     form={form}
                     initialValues={coach}
                     formName="editCoachForm"
+                    onImageChange={handleImageChange}
                 />
             )}
         </Modal>

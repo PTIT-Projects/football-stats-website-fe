@@ -3,14 +3,18 @@ import { useEffect, useState } from "react";
 import ImageUpload from "../../common/ImageUpload";
 import { getImageUrl } from "../../../services/api.service";
 
-const LeagueForm = ({ form, initialValues = {}, formName = "leagueForm", onImageChange }) => {
+const ClubForm = ({ form, initialValues = {}, formName = "clubForm", onImageChange }) => {
     const [initialImageUrl, setInitialImageUrl] = useState(null);
 
     // Initialize form with values if in edit mode
     useEffect(() => {
         if (initialValues && Object.keys(initialValues).length > 0) {
+            console.log('Initial club values received:', initialValues);
+
             form.setFieldsValue({
-                name: initialValues.name
+                name: initialValues.name,
+                country: initialValues.country,
+                stadiumName: initialValues.stadiumName
             });
 
             // Set initial image URL if available
@@ -37,23 +41,38 @@ const LeagueForm = ({ form, initialValues = {}, formName = "leagueForm", onImage
         >
             <Form.Item
                 name="name"
-                label="Name"
-                rules={[{ required: true, message: 'Please enter league name' }]}
+                label="Club Name"
+                rules={[{ required: true, message: "Please enter the club name" }]}
             >
-                <Input placeholder="Enter league name" />
+                <Input placeholder="Enter club name" />
+            </Form.Item>
+            
+            <Form.Item
+                name="country"
+                label="Country"
+                rules={[{ required: true, message: "Please enter the country" }]}
+            >
+                <Input placeholder="Enter country" />
+            </Form.Item>
+            
+            <Form.Item
+                name="stadiumName"
+                label="Stadium Name"
+            >
+                <Input placeholder="Enter stadium name" />
             </Form.Item>
 
-            <Divider>League Image</Divider>
+            <Divider>Club Image</Divider>
             
-            <Form.Item label="League Logo">
+            <Form.Item label="Club Logo">
                 <ImageUpload 
                     initialImageUrl={initialImageUrl} 
                     onImageChange={handleImageChange} 
-                    entityName="League"
+                    entityName="Club"
                 />
             </Form.Item>
         </Form>
     );
 };
 
-export default LeagueForm;
+export default ClubForm;

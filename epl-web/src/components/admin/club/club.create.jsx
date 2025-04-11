@@ -1,20 +1,34 @@
-import { Button, Form, Input, Modal, message } from "antd";
+import { Button, Form, message, Modal } from "antd";
 import { useState } from "react";
-import { createClubAPI } from "../../../services/api.service.js";
+import { createClubAPI, createClubWithImageAPI } from "../../../services/api.service.js";
+import ClubForm from "./club.form.jsx";
 
 const CreateClubModal = ({ isOpen, onCancel, onSuccess }) => {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
+
+    const handleImageChange = (file) => {
+        setImageFile(file);
+    };
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
             setSubmitting(true);
 
-            const res = await createClubAPI(values);
+            // Use the image upload API if an image is selected
+            let res;
+            if (imageFile) {
+                res = await createClubWithImageAPI(values, imageFile);
+            } else {
+                res = await createClubAPI(values);
+            }
+
             if (res.data) {
                 message.success("Club created successfully");
                 form.resetFields();
+                setImageFile(null);
                 onSuccess();
                 onCancel();
             } else {
@@ -49,28 +63,11 @@ const CreateClubModal = ({ isOpen, onCancel, onSuccess }) => {
             width={600}
             destroyOnClose
         >
-            <Form form={form} layout="vertical" name="createClubForm">
-                <Form.Item
-                    name="name"
-                    label="Club Name"
-                    rules={[{ required: true, message: "Please enter the club name" }]}
-                >
-                    <Input placeholder="Enter club name" />
-                </Form.Item>
-                <Form.Item
-                    name="country"
-                    label="Country"
-                    rules={[{ required: true, message: "Please enter the country" }]}
-                >
-                    <Input placeholder="Enter country" />
-                </Form.Item>
-                <Form.Item
-                    name="stadiumName"
-                    label="Stadium Name"
-                >
-                    <Input placeholder="Enter stadium name" />
-                </Form.Item>
-            </Form>
+            <ClubForm
+                form={form}
+                formName="createClubForm"
+                onImageChange={handleImageChange}
+            />
         </Modal>
     );
 };

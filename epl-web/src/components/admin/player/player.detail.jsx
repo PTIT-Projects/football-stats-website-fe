@@ -1,6 +1,6 @@
 // epl-web/src/components/admin/player/player.detail.jsx
 import { useEffect, useState } from "react";
-import { Descriptions, Spin } from "antd";
+import { Descriptions, Spin, Row, Col, Card } from "antd";
 import { useParams } from "react-router-dom";
 import { fetchPlayerDetailAPI } from "../../../services/api.service.js";
 import TransferHistoryTable from "../transfer-history/transfer.history.table.jsx";
@@ -42,6 +42,11 @@ const AdminPlayerDetail = () => {
         });
     };
 
+    // Function to get image URL
+    const getImageUrl = (path) => {
+        return `/images/${path}`;
+    };
+
     // Show loading spinner while data is being fetched
     if (loading || !player) {
         return (
@@ -51,26 +56,49 @@ const AdminPlayerDetail = () => {
         );
     }
 
-    // Create description items for player details
-    const descriptionItems = [
-        { label: "ID", value: player.id },
-        { label: "Name", value: player.name },
-        { label: "Age", value: player.age },
-        { label: "Date of Birth", value: formatDate(player.dob) },
-        { label: "Shirt Number", value: player.shirtNumber },
-        { label: "Citizenship", value: Array.isArray(player.citizenships) ? player.citizenships.join(', ') : player.citizenships },
-        { label: "Position", value: Array.isArray(player.positions) ? player.positions.join(', ') : player.positions },
-        { label: "Current Club", value: player.currentClub || "No club" },
-        { label: "Market Value (millions Euro)", value: player.marketValue }
-    ];
-
     return (
         <div style={{ padding: "30px" }}>
-            <Descriptions title="Player Details" bordered>
-                {descriptionItems.map((item, index) => (
-                    <Descriptions.Item key={index} label={item.label}>{item.value}</Descriptions.Item>
-                ))}
-            </Descriptions>
+            <Row gutter={[24, 24]}>
+                <Col xs={24} md={8}>
+                    {player.imagePath && (
+                        <Card>
+                            <div style={{ textAlign: "center" }}>
+                                <img 
+                                    src={getImageUrl(player.imagePath)} 
+                                    alt={player.name}
+                                    style={{ 
+                                        maxWidth: "100%", 
+                                        maxHeight: "300px",
+                                        objectFit: "contain" 
+                                    }}
+                                />
+                            </div>
+                        </Card>
+                    )}
+                </Col>
+                <Col xs={24} md={16}>
+                    <Descriptions title="Player Details" bordered>
+                        <Descriptions.Item label="ID">{player.id}</Descriptions.Item>
+                        <Descriptions.Item label="Name">{player.name}</Descriptions.Item>
+                        <Descriptions.Item label="Age">{player.age}</Descriptions.Item>
+                        <Descriptions.Item label="Date of Birth">{formatDate(player.dob)}</Descriptions.Item>
+                        <Descriptions.Item label="Market Value">€{player.marketValue?.toLocaleString() || 'N/A'}</Descriptions.Item>
+                        <Descriptions.Item label="Shirt Number">{player.shirtNumber || 'N/A'}</Descriptions.Item>
+                        <Descriptions.Item label="Positions" span={3}>
+                            {Array.isArray(player.positions) ? player.positions.join(', ') : player.positions}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Citizenships" span={3}>
+                            {Array.isArray(player.citizenships) ? player.citizenships.join(', ') : player.citizenships}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Current Club" span={3}>
+                            {player.transferHistories && player.transferHistories.length > 0 ?
+                                (typeof player.transferHistories[0].newClub === 'object' ?
+                                    player.transferHistories[0].newClub.name : player.transferHistories[0].newClub) :
+                                "No club"}
+                        </Descriptions.Item>
+                    </Descriptions>
+                </Col>
+            </Row>
 
             <div style={{ marginTop: "30px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
