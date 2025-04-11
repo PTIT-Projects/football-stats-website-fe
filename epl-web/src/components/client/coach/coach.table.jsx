@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { Table, Card, Alert, Button, Tag } from "antd";
-import { fetchAllCoachesAPI } from "../../../services/api.service.js";
+import { Table, Tag, Input, Button, Row, Col, Select, Avatar } from 'antd';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { getSearchCoachesAPI, getImageUrl } from '../../../services/api.service';
+import { SearchOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
 
 const ClientCoachTable = () => {
-    const [searchParams] = useSearchParams();
-    const [filterInfo, setFilterInfo] = useState(null);
     const [coaches, setCoaches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({
@@ -14,176 +15,197 @@ const ClientCoachTable = () => {
         total: 0
     });
 
-    // Extract filter parameters from URL
-    const citizenship = searchParams.get('citizenship');
-    const club = searchParams.get('club');
+    // Filter states
+    const [searchName, setSearchName] = useState('');
+    const [selectedClub, setSelectedClub] = useState('');
+    const [selectedNationality, setSelectedNationality] = useState('');
 
-    // Determine if we have any filters active
+    // Lists for filters
+    const [clubs, setClubs] = useState([]);
+    const [nationalities, setNationalities] = useState([]);
+
+    // Load coaches data
     useEffect(() => {
-        if (citizenship || club) {
-            let filterText = "Filtering by: ";
-            let filters = [];
+        loadCoaches();
+    }, [pagination.current, pagination.pageSize, searchName, selectedClub, selectedNationality]);
 
-            if (citizenship) filters.push(`Nationality "${citizenship}"`);
-            if (club) filters.push(`Club "${club}"`);
-
-            setFilterInfo(filterText + filters.join(", "));
-        } else {
-            setFilterInfo(null);
-        }
-    }, [citizenship, club]);
-
-    const fetchCoaches = async (params = {}) => {
+    const loadCoaches = async () => {
         setLoading(true);
         try {
-            // Build Spring Filter compliant filter string
-            let filterParts = [];
-
-            if (citizenship) {
-                filterParts.push(`citizenships : '${citizenship}'`);
-            }
-
-            if (club) {
-                filterParts.push(`coachClubs.club.id : ${club}`);
-            }
-
-            // API query parameters
-            const queryParams = {
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize,
-                filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+            const filters = {
+                name: searchName || undefined,
+                club: selectedClub || undefined,
+                nationality: selectedNationality || undefined,
+                page: pagination.current - 1,
+                size: pagination.pageSize
             };
 
-            const response = await fetchAllCoachesAPI(queryParams);
-
-            if (response.data && response.data.result) {
-                setCoaches(response.data.result);
+            const response = await getSearchCoachesAPI(filters);
+            
+            if (response.data) {
+                setCoaches(response.data.content);
                 setPagination({
-                    current: response.data.meta.page,
-                    pageSize: response.data.meta.pageSize,
-                    total: response.data.meta.total
+                    ...pagination,
+                    total: response.data.totalElements
                 });
+                
+                // Extract unique values for filters
+                if (response.data.clubs) {
+                    setClubs(response.data.clubs);
+                }
+                if (response.data.nationalities) {
+                    setNationalities(response.data.nationalities);
+                }
             }
         } catch (error) {
-            console.error("Failed to fetch coaches:", error);
+            console.error("Error loading coaches:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchCoaches();
-    }, [citizenship, club]);
-
-    // Handle pagination changes
-    const handleTableChange = (newPagination, filters, sorter) => {
-        // Only fetch new data when pagination changes
-        if (newPagination.current !== pagination.current ||
-            newPagination.pageSize !== pagination.pageSize) {
-            fetchCoaches({
-                current: newPagination.current,
-                pageSize: newPagination.pageSize
-            });
-        }
+    // Handle table pagination change
+    const handleTableChange = (pagination) => {
+        setPagination(pagination);
     };
 
+    // Handle search button click
+    const handleSearch = () => {
+        setPagination({ ...pagination, current: 1 });
+    };
+
+    // Handle reset filters
+    const handleReset = () => {
+        setSearchName('');
+        setSelectedClub('');
+        setSelectedNationality('');
+        setPagination({ ...pagination, current: 1 });
+    };
+
+    // Table columns definition
     const columns = [
         {
-            title: "Name",
-            dataIndex: "name",
-            key: "name",
-            render: (text, record) => <Link to={`/coaches/${record.id}`}>{text}</Link>,
-            sorter: (a, b) => a.name.localeCompare(b.name)
+            title: '',
+            dataIndex: 'imagePath',
+            key: 'image',
+            width: '70px',
+            render: (imagePath, record) => (
+                <Link to={`/coaches/${record.id}`}>
+                    <Avatar 
+                        src={imagePath ? getImageUrl(imagePath) : null} 
+                        size={50} 
+                        alt={record.name}
+                    >
+                        {!imagePath ? record.name.charAt(0) : null}
+                    </Avatar>
+                </Link>
+            ),
         },
         {
-            title: "Age",
-            dataIndex: "age",
-            key: "age",
-            sorter: (a, b) => a.age - b.age
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            render: (text, record) => <Link to={`/coaches/${record.id}`}>{text}</Link>
         },
         {
-            title: "Citizenship",
-            dataIndex: "citizenships",
-            key: "citizenships",
-            render: (citizenships) => {
-                if (!citizenships || !Array.isArray(citizenships)) return "-";
-                return (
-                    <span>
-                        {citizenships.map(country => (
-                            <Tag key={country} color="green" style={{marginBottom: "5px"}}>
-                                <Link to={`/coaches?citizenship=${encodeURIComponent(country)}`}>
-                                    {country}
-                                </Link>
-                            </Tag>
-                        ))}
-                    </span>
-                );
-            },
-            sorter: (a, b) => {
-                const aStr = Array.isArray(a.citizenships) ? a.citizenships.join(', ') : '';
-                const bStr = Array.isArray(b.citizenships) ? b.citizenships.join(', ') : '';
-                return aStr.localeCompare(bStr);
-            }
+            title: 'Age',
+            dataIndex: 'age',
+            key: 'age',
+            width: '80px',
         },
         {
-            title: "Club",
-            key: "club",
-            render: (_, record) => {
-                if (!record.coachClubs || !record.coachClubs.length)
-                    return "No club";
-
-                const currentClub = record.coachClubs[0].club;
-                let clubName, clubId;
-
-                if (typeof currentClub === 'object' && currentClub) {
-                    clubName = currentClub.name;
-                    clubId = currentClub.id;
-                    return <Link to={`/coaches?club=${clubId}`}>{clubName}</Link>;
-                } else {
-                    return currentClub || "No club";
-                }
-            },
-            sorter: (a, b) => {
-                const aClub = a.coachClubs && a.coachClubs[0] && a.coachClubs[0].club ?
-                    (typeof a.coachClubs[0].club === 'object' ? a.coachClubs[0].club.name : a.coachClubs[0].club) : '';
-
-                const bClub = b.coachClubs && b.coachClubs[0] && b.coachClubs[0].club ?
-                    (typeof b.coachClubs[0].club === 'object' ? b.coachClubs[0].club.name : b.coachClubs[0].club) : '';
-
-                return aClub.toString().localeCompare(bClub.toString());
-            }
-        }
+            title: 'Current Club',
+            key: 'currentClub',
+            dataIndex: 'currentClub',
+            render: (currentClub) => currentClub ? (
+                <Link to={`/clubs/${currentClub.id}`}>{currentClub.name}</Link>
+            ) : 'No club'
+        },
+        {
+            title: 'Nationality',
+            key: 'citizenship',
+            dataIndex: 'citizenships',
+            render: (citizenships) => (
+                <>
+                    {Array.isArray(citizenships) ? citizenships.map((citizenship, index) => (
+                        <Tag color="green" key={index}>
+                            {citizenship}
+                        </Tag>
+                    )) : citizenships && (
+                        <Tag color="green">
+                            {citizenships}
+                        </Tag>
+                    )}
+                </>
+            ),
+        },
     ];
 
     return (
-        <>
-            {filterInfo && (
-                <Card style={{ marginBottom: 16 }}>
-                    <Alert
-                        message={filterInfo}
-                        type="info"
-                        showIcon
-                        action={
-                            <Button type="link" href="/coaches">Clear filters</Button>
-                        }
-                    />
-                </Card>
-            )}
-            <Card title="Head Coach Table">
-                <Table
-                    columns={columns}
-                    dataSource={coaches}
-                    rowKey="id"
-                    pagination={{
-                        ...pagination,
-                        showSizeChanger: true,
-                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`
-                    }}
-                    loading={loading}
-                    onChange={handleTableChange}
-                />
-            </Card>
-        </>
+        <div>
+            {/* Filters */}
+            <div style={{ marginBottom: 20 }}>
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12} md={8}>
+                        <Input 
+                            placeholder="Search by name"
+                            value={searchName}
+                            onChange={e => setSearchName(e.target.value)}
+                            allowClear
+                        />
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Select 
+                            placeholder="Filter by club"
+                            style={{ width: '100%' }}
+                            value={selectedClub || undefined}
+                            onChange={setSelectedClub}
+                            allowClear
+                            showSearch
+                            optionFilterProp="children"
+                        >
+                            {clubs.map(club => (
+                                <Option key={club.id} value={club.id}>{club.name}</Option>
+                            ))}
+                        </Select>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Select 
+                            placeholder="Filter by nationality"
+                            style={{ width: '100%' }}
+                            value={selectedNationality || undefined}
+                            onChange={setSelectedNationality}
+                            allowClear
+                            showSearch
+                            optionFilterProp="children"
+                        >
+                            {nationalities.map(nationality => (
+                                <Option key={nationality} value={nationality}>{nationality}</Option>
+                            ))}
+                        </Select>
+                    </Col>
+                </Row>
+                <div style={{ marginTop: 16, textAlign: 'right' }}>
+                    <Button type="primary" onClick={handleSearch} icon={<SearchOutlined />} style={{ marginRight: 8 }}>
+                        Search
+                    </Button>
+                    <Button onClick={handleReset}>
+                        Reset
+                    </Button>
+                </div>
+            </div>
+
+            {/* Coaches Table */}
+            <Table 
+                columns={columns} 
+                dataSource={coaches}
+                rowKey="id"
+                pagination={pagination}
+                onChange={handleTableChange}
+                loading={loading}
+                scroll={{ x: 'max-content' }}
+            />
+        </div>
     );
 };
 

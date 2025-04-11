@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
-import { Table, Card } from "antd";
-import { Link } from "react-router-dom";
-import { fetchAllLeaguesAPI } from "../../../services/api.service.js";
+import { Table, Tag, Input, Button, Row, Col, Select, Avatar } from 'antd';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { getSearchLeaguesAPI, getImageUrl } from '../../../services/api.service';
+import { SearchOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
 
 const ClientLeagueTable = () => {
     const [leagues, setLeagues] = useState([]);
@@ -12,76 +15,189 @@ const ClientLeagueTable = () => {
         total: 0
     });
 
-    const fetchLeagues = async (params = {}) => {
+    // Filter states
+    const [searchName, setSearchName] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState('');
+    const [selectedTier, setSelectedTier] = useState('');
+
+    // Lists for filters
+    const [countries, setCountries] = useState([]);
+    const [tiers, setTiers] = useState([1, 2, 3, 4, 5]);
+
+    // Load leagues data
+    useEffect(() => {
+        loadLeagues();
+    }, [pagination.current, pagination.pageSize, searchName, selectedCountry, selectedTier]);
+
+    const loadLeagues = async () => {
         setLoading(true);
         try {
-            const response = await fetchAllLeaguesAPI({
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize
-            });
+            const filters = {
+                name: searchName || undefined,
+                country: selectedCountry || undefined,
+                tier: selectedTier || undefined,
+                page: pagination.current - 1,
+                size: pagination.pageSize
+            };
 
-            if (response.data && response.data.result) {
-                setLeagues(response.data.result);
+            const response = await getSearchLeaguesAPI(filters);
+            
+            if (response.data) {
+                setLeagues(response.data.content);
                 setPagination({
-                    current: response.data.meta.page,
-                    pageSize: response.data.meta.pageSize,
-                    total: response.data.meta.total
+                    ...pagination,
+                    total: response.data.totalElements
                 });
-            } else if (Array.isArray(response.data)) {
                 
-                setLeagues(response.data);
-                setPagination(prev => ({
-                    ...prev,
-                    total: response.data.length
-                }));
+                // Extract unique values for filters
+                if (response.data.countries) {
+                    setCountries(response.data.countries);
+                }
             }
         } catch (error) {
-            console.error("Failed to fetch leagues:", error);
+            console.error("Error loading leagues:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchLeagues();
-    }, []);
-
-    const handleTableChange = (newPagination, filters, sorter) => {
-        
-        if (newPagination.current !== pagination.current ||
-            newPagination.pageSize !== pagination.pageSize) {
-            fetchLeagues({
-                current: newPagination.current,
-                pageSize: newPagination.pageSize
-            });
-        }
+    // Handle table pagination change
+    const handleTableChange = (pagination) => {
+        setPagination(pagination);
     };
 
+    // Handle search button click
+    const handleSearch = () => {
+        setPagination({ ...pagination, current: 1 });
+    };
+
+    // Handle reset filters
+    const handleReset = () => {
+        setSearchName('');
+        setSelectedCountry('');
+        setSelectedTier('');
+        setPagination({ ...pagination, current: 1 });
+    };
+
+    // Table columns definition
     const columns = [
         {
-            title: "League",
-            dataIndex: "name",
-            key: "name",
-            render: (text, record) => <Link to={`/leagues/${record.id}`}>{text}</Link>,
-            sorter: (a, b) => a.name.localeCompare(b.name)
-        }
+            title: '',
+            dataIndex: 'imagePath',
+            key: 'image',
+            width: '70px',
+            render: (imagePath, record) => (
+                <Link to={`/leagues/${record.id}`}>
+                    <Avatar 
+                        src={imagePath ? getImageUrl(imagePath) : null} 
+                        size={50} 
+                        alt={record.name}
+                        shape="square"
+                    >
+                        {!imagePath ? record.name.charAt(0) : null}
+                    </Avatar>
+                </Link>
+            ),
+        },
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            render: (text, record) => <Link to={`/leagues/${record.id}`}>{text}</Link>
+        },
+        {
+            title: 'Country',
+            key: 'country',
+            dataIndex: 'country',
+            render: (country) => (
+                <Tag color="blue">
+                    {country}
+                </Tag>
+            ),
+        },
+        {
+            title: 'Tier',
+            dataIndex: 'tier',
+            key: 'tier',
+            width: '80px',
+        },
+        {
+            title: 'Teams',
+            dataIndex: 'numberOfTeams',
+            key: 'teams',
+            width: '80px',
+        },
+        {
+            title: 'Current Season',
+            dataIndex: 'currentSeason',
+            key: 'currentSeason',
+            render: (currentSeason) => currentSeason ? currentSeason.name : '-'
+        },
     ];
 
     return (
-        <Card title="League Table">
-            <Table
-                columns={columns}
+        <div>
+            {/* Filters */}
+            <div style={{ marginBottom: 20 }}>
+                <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12} md={8}>
+                        <Input 
+                            placeholder="Search by name"
+                            value={searchName}
+                            onChange={e => setSearchName(e.target.value)}
+                            allowClear
+                        />
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Select 
+                            placeholder="Filter by country"
+                            style={{ width: '100%' }}
+                            value={selectedCountry || undefined}
+                            onChange={setSelectedCountry}
+                            allowClear
+                            showSearch
+                            optionFilterProp="children"
+                        >
+                            {countries.map(country => (
+                                <Option key={country} value={country}>{country}</Option>
+                            ))}
+                        </Select>
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Select 
+                            placeholder="Filter by tier"
+                            style={{ width: '100%' }}
+                            value={selectedTier || undefined}
+                            onChange={setSelectedTier}
+                            allowClear
+                        >
+                            {tiers.map(tier => (
+                                <Option key={tier} value={tier}>{tier}</Option>
+                            ))}
+                        </Select>
+                    </Col>
+                </Row>
+                <div style={{ marginTop: 16, textAlign: 'right' }}>
+                    <Button type="primary" onClick={handleSearch} icon={<SearchOutlined />} style={{ marginRight: 8 }}>
+                        Search
+                    </Button>
+                    <Button onClick={handleReset}>
+                        Reset
+                    </Button>
+                </div>
+            </div>
+
+            {/* Leagues Table */}
+            <Table 
+                columns={columns} 
                 dataSource={leagues}
                 rowKey="id"
-                pagination={{
-                    ...pagination,
-                    showSizeChanger: true,
-                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`
-                }}
-                loading={loading}
+                pagination={pagination}
                 onChange={handleTableChange}
+                loading={loading}
+                scroll={{ x: 'max-content' }}
             />
-        </Card>
+        </div>
     );
 };
 
