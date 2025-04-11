@@ -1,461 +1,100 @@
 // epl-web/src/components/client/club/club.detail.jsx
 import { useEffect, useState } from "react";
+import { Descriptions, Spin, Tabs, Row, Col, Card } from "antd";
 import { useParams } from "react-router-dom";
-import {
-    Card, Spin, Tabs, Table, Tag, Select, Typography, Descriptions,
-    Avatar, Row, Col, Divider, notification, Empty
-} from "antd";
-import { Link } from "react-router-dom";
-import {
-    fetchClubDetailAPI,
-    getClubSeasonsAPI,
-    getClubSquadAPI,
-    getClubTransfersAPI,
-    getClubTopScorersAPI,
-    getClubTopAssistsAPI,
-    fetchLeagueSeasonDetailAPI
-} from "../../../services/api.service.js";
-
-const { TabPane } = Tabs;
-const { Option } = Select;
-const { Title, Text } = Typography;
+import { fetchClubDetailAPI, getImageUrl, getClubSquadAPI, getClubTransfersAPI, getClubSeasonsAPI } from "../../../services/api.service.js";
+import ClubSquad from "./club.squad.jsx";
+import ClubTransferHistory from "./club.transfer.history.jsx";
 
 const ClientClubDetail = () => {
     const { id } = useParams();
     const [club, setClub] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [seasons, setSeasons] = useState([]);
     const [selectedSeason, setSelectedSeason] = useState(null);
-    
-    const [squadList, setSquadList] = useState([]);
+    const [seasons, setSeasons] = useState([]);
+    const [squad, setSquad] = useState([]);
     const [transfers, setTransfers] = useState([]);
-    const [arrivals, setArrivals] = useState([]);
-    const [departures, setDepartures] = useState([]);
-    const [topScorers, setTopScorers] = useState([]);
-    const [topAssists, setTopAssists] = useState([]);
-    const [leagueTableData, setLeagueTableData] = useState([]);
-    const [dataLoading, setDataLoading] = useState(false);
-    const [statsLoading, setStatsLoading] = useState(false);
-    const [leagueTableLoading, setLeagueTableLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState("1");
+    const [loadingSquad, setLoadingSquad] = useState(false);
+    const [loadingTransfers, setLoadingTransfers] = useState(false);
 
-    // Load club details and available seasons
+    // Load club details when component mounts
     useEffect(() => {
-        const fetchClubData = async () => {
-            setLoading(true);
-            try {
-                // Get club details
-                const clubResponse = await fetchClubDetailAPI(id);
-                if (clubResponse.data) {
-                    setClub(clubResponse.data);
-                }
-
-                // Get seasons for this club
-                const seasonResponse = await getClubSeasonsAPI(id);
-                if (seasonResponse.data) {
-                    const seasonsList = seasonResponse.data.map(season => ({
-                        id: season.id,
-                        name: season.name,
-                        leagueId: season.league?.id,
-                        leagueName: season.league?.name
-                    }));
-
-                    setSeasons(seasonsList);
-
-                    // Set the first season as default if available
-                    if (seasonsList.length > 0) {
-                        setSelectedSeason(seasonsList[0]);
-                    }
-                }
-            } catch (error) {
-                console.error("Error fetching club data:", error);
-                notification.error({
-                    message: "Error",
-                    description: "Failed to load club information"
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchClubData();
+        loadClubDetail();
+        loadClubSeasons();
     }, [id]);
 
-    // Load season-specific data when selected season changes
+    // Load squad and transfers when selected season changes
     useEffect(() => {
-        if (!selectedSeason) return;
+        if (selectedSeason) {
+            loadClubSquad(selectedSeason);
+            loadClubTransfers(selectedSeason);
+        }
+    }, [selectedSeason]);
 
-        const fetchSeasonData = async () => {
-            setDataLoading(true);
-            setStatsLoading(true);
-            try {
-                // Fetch squad list for the selected season
-                const squadResponse = await getClubSquadAPI(id, selectedSeason.id);
-                if (squadResponse.data) {
-                    setSquadList(squadResponse.data);
-                } else {
-                    setSquadList([]);
-                }
-
-                // Fetch transfers for the selected season
-                const transferResponse = await getClubTransfersAPI(id, selectedSeason.id);
-                if (transferResponse.data) {
-                    setTransfers(transferResponse.data);
-
-                    // Process and separate transfers into arrivals and departures
-                    // Check if club name is available
-                    if (club && club.name) {
-                        const clubName = club.name;
-
-                        // Arrivals: transfers TO this club (destination is this club)
-                        const arrivalsData = transferResponse.data.filter(transfer =>
-                            transfer.club === clubName ||
-                            (transfer.club && transfer.club.id === parseInt(id))
-                        );
-                        setArrivals(arrivalsData);
-
-                        // Departures: transfers FROM this club (source is this club)
-                        const departuresData = transferResponse.data.filter(transfer =>
-                            transfer.previousClub === clubName ||
-                            (transfer.previousClub && transfer.previousClub.id === parseInt(id))
-                        );
-                        setDepartures(departuresData);
-                    } else {
-                        setArrivals([]);
-                        setDepartures([]);
-                    }
-                } else {
-                    setTransfers([]);
-                    setArrivals([]);
-                    setDepartures([]);
-                }
-
-                // Fetch top scorers for the club in this season
-                try {
-                    const scorersResponse = await getClubTopScorersAPI(selectedSeason.id, id);
-                    if (scorersResponse.data) {
-                        setTopScorers(scorersResponse.data);
-                    } else {
-                        setTopScorers([]);
-                    }
-                } catch (error) {
-                    console.error("Error loading top scorers:", error);
-                    setTopScorers([]);
-                }
-
-                // Fetch top assists for the club in this season
-                try {
-                    const assistsResponse = await getClubTopAssistsAPI(selectedSeason.id, id);
-                    if (assistsResponse.data) {
-                        setTopAssists(assistsResponse.data);
-                    } else {
-                        setTopAssists([]);
-                    }
-                } catch (error) {
-                    console.error("Error loading top assists:", error);
-                    setTopAssists([]);
-                }
-
-                // Fetch league season data for standings
-                setLeagueTableLoading(true);
-                try {
-                    const leagueSeasonResponse = await fetchLeagueSeasonDetailAPI(selectedSeason.id);
-                    if (leagueSeasonResponse.data && leagueSeasonResponse.data.clubSeasonTables) {
-                        // Sort by position or points
-                        const sortedData = [...leagueSeasonResponse.data.clubSeasonTables]
-                            .sort((a, b) => {
-                                // Sort by ranked property if available, otherwise points
-                                if (a.ranked && b.ranked) return a.ranked - b.ranked;
-                                return b.points - a.points || b.diff - a.diff;
-                            })
-                            .map((item, index) => ({
-                                ...item,
-                                position: item.ranked || index + 1,
-                                played: item.numWins + item.numDraws + item.numLosses,
-                                isCurrentClub: item.club.id === parseInt(id)
-                            }));
-                        setLeagueTableData(sortedData);
-                    } else {
-                        setLeagueTableData([]);
-                    }
-                } catch (error) {
-                    console.error("Error fetching league standings:", error);
-                    setLeagueTableData([]);
-                } finally {
-                    setLeagueTableLoading(false);
-                }
-
-            } catch (error) {
-                console.error("Error fetching season data:", error);
-                notification.error({
-                    message: "Error",
-                    description: "Failed to load season data"
-                });
-            } finally {
-                setDataLoading(false);
-                setStatsLoading(false);
+    // Function to fetch club details from API
+    const loadClubDetail = async () => {
+        setLoading(true);
+        try {
+            const response = await fetchClubDetailAPI(id);
+            if (response.data) {
+                setClub(response.data);
             }
-        };
-
-        fetchSeasonData();
-    }, [selectedSeason, id, club]);
-
-    // Handle season selection change
-    const handleSeasonChange = (value) => {
-        const selected = seasons.find(season => season.id === value);
-        setSelectedSeason(selected);
+        } catch (error) {
+            console.error("Error loading club detail:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Format date for display
-    const formatDate = (dateString) => {
-        if (!dateString) return "-";
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+    // Function to load available seasons for the club
+    const loadClubSeasons = async () => {
+        try {
+            const response = await getClubSeasonsAPI(id);
+            if (response.data && Array.isArray(response.data)) {
+                setSeasons(response.data);
+                // Set the most recent season as the default selected season
+                if (response.data.length > 0) {
+                    setSelectedSeason(response.data[0].id);
+                }
+            }
+        } catch (error) {
+            console.error("Error loading club seasons:", error);
+        }
     };
 
-    // Define columns for the squad table
-    const squadColumns = [
-        {
-            title: "Name",
-            dataIndex: "name",
-            key: "name",
-            render: (text, record) => (
-                <Link to={`/players/${record.id}`}>{text}</Link>
-            ),
-            sorter: (a, b) => a.name.localeCompare(b.name)
-        },
-        {
-            title: "Position",
-            dataIndex: "positions",
-            key: "positions",
-            render: positions => (
-                <span>
-                    {positions && positions.map(position => (
-                        <Tag color="blue" key={position}>
-                            <Link to={`/players?position=${encodeURIComponent(position)}`}>
-                                {position}
-                            </Link>
-                        </Tag>
-                    ))}
-                </span>
-            ),
-            sorter: (a, b) => {
-                const aPos = a.positions && a.positions.length > 0 ? a.positions[0] : '';
-                const bPos = b.positions && b.positions.length > 0 ? b.positions[0] : '';
-                return aPos.localeCompare(bPos);
+    // Function to load club squad for a specific season
+    const loadClubSquad = async (seasonId) => {
+        setLoadingSquad(true);
+        try {
+            const response = await getClubSquadAPI(id, seasonId);
+            if (response.data && Array.isArray(response.data)) {
+                setSquad(response.data);
             }
-        },
-        {
-            title: "Nationality",
-            dataIndex: "citizenships",
-            key: "citizenships",
-            render: citizenships => (
-                <span>
-                    {citizenships && citizenships.map(country => (
-                        <Tag color="green" key={country}>
-                            <Link to={`/players?citizenship=${encodeURIComponent(country)}`}>
-                                {country}
-                            </Link>
-                        </Tag>
-                    ))}
-                </span>
-            ),
-            sorter: (a, b) => {
-                const aStr = Array.isArray(a.citizenships) ? a.citizenships.join(', ') : '';
-                const bStr = Array.isArray(b.citizenships) ? b.citizenships.join(', ') : '';
-                return aStr.localeCompare(bStr);
+        } catch (error) {
+            console.error("Error loading club squad:", error);
+        } finally {
+            setLoadingSquad(false);
+        }
+    };
+
+    // Function to load club transfers for a specific season
+    const loadClubTransfers = async (seasonId) => {
+        setLoadingTransfers(true);
+        try {
+            const response = await getClubTransfersAPI(id, seasonId);
+            if (response.data && Array.isArray(response.data)) {
+                setTransfers(response.data);
             }
-        },
-        {
-            title: "Age",
-            dataIndex: "age",
-            key: "age",
-            sorter: (a, b) => a.age - b.age
-        },
-        {
-            title: "Market Value",
-            dataIndex: "marketValue",
-            key: "marketValue",
-            render: (value) => value ? `${value} m€` : "-",
-            sorter: (a, b) => a.marketValue - b.marketValue
+        } catch (error) {
+            console.error("Error loading club transfers:", error);
+        } finally {
+            setLoadingTransfers(false);
         }
-    ];
-
-    // Define columns for the transfers table
-    const transferColumns = [
-        {
-            title: "Date",
-            dataIndex: "date",
-            key: "date",
-            render: (date) => formatDate(date),
-            sorter: (a, b) => new Date(a.date) - new Date(b.date)
-        },
-        {
-            title: "Player",
-            dataIndex: "player",
-            key: "player",
-            render: (player, record) => (
-                <Link to={`/players/${record.playerId}`}>{player}</Link>
-            ),
-            sorter: (a, b) => a.player.localeCompare(b.player)
-        },
-        {
-            title: "From",
-            dataIndex: "previousClub",
-            key: "from",
-            render: (prevClub) => prevClub || "Free Agent",
-            sorter: (a, b) => (a.previousClub || "").localeCompare(b.previousClub || "")
-        },
-        {
-            title: "To",
-            dataIndex: "club",
-            key: "to",
-            render: (toClub) => toClub || "Free Agent",
-            sorter: (a, b) => (a.club || "").localeCompare(b.club || "")
-        },
-        {
-            title: "Type",
-            dataIndex: "type",
-            key: "type",
-            render: (type) => {
-                let color = 'blue';
-                if (type === 'Signed') color = 'green';
-                if (type === 'Released') color = 'red';
-                if (type === 'Loan') color = 'orange';
-
-                return (
-                    <Tag color={color}>
-                        {type}
-                    </Tag>
-                );
-            },
-            sorter: (a, b) => a.type.localeCompare(b.type)
-        },
-        {
-            title: "Fee",
-            dataIndex: "fee",
-            key: "fee",
-            render: (fee) => fee ? `${fee} m€` : "Free",
-            sorter: (a, b) => (a.fee || 0) - (b.fee || 0)
-        }
-    ];
-
-    // Stats table columns
-    const statsColumns = [
-        {
-            title: "Rank",
-            key: "rank",
-            width: 70,
-            render: (_, __, index) => index + 1
-        },
-        {
-            title: "Player",
-            dataIndex: "playerName",
-            key: "player",
-            render: (text, record) => (
-                <Link to={`/players/${record.playerId}`}>{text}</Link>
-            )
-        },
-        {
-            title: "Goals",
-            dataIndex: "goals",
-            key: "goals",
-            width: 90,
-            sorter: (a, b) => a.goals - b.goals,
-            defaultSortOrder: 'descend'
-        }
-    ];
-
-    const assistsColumns = [
-        {
-            title: "Rank",
-            key: "rank",
-            width: 70,
-            render: (_, __, index) => index + 1
-        },
-        {
-            title: "Player",
-            dataIndex: "playerName",
-            key: "player",
-            render: (text, record) => (
-                <Link to={`/players/${record.playerId}`}>{text}</Link>
-            )
-        },
-        {
-            title: "Assists",
-            dataIndex: "assists",
-            key: "assists",
-            width: 90,
-            sorter: (a, b) => a.assists - b.assists,
-            defaultSortOrder: 'descend'
-        }
-    ];
-
-    // League table columns
-    const leagueTableColumns = [
-        {
-            title: "Position",
-            dataIndex: "position",
-            key: "position",
-            width: 70,
-            sorter: (a, b) => a.position - b.position
-        },
-        {
-            title: "Club",
-            dataIndex: "club",
-            key: "club",
-            render: (club) => club.name,
-            sorter: (a, b) => a.club.name.localeCompare(b.club.name)
-        },
-        {
-            title: "Played",
-            dataIndex: "played",
-            key: "played",
-            width: 90,
-            sorter: (a, b) => a.played - b.played
-        },
-        {
-            title: "Wins",
-            dataIndex: "numWins",
-            key: "wins",
-            width: 90,
-            sorter: (a, b) => a.numWins - b.numWins
-        },
-        {
-            title: "Draws",
-            dataIndex: "numDraws",
-            key: "draws",
-            width: 90,
-            sorter: (a, b) => a.numDraws - b.numDraws
-        },
-        {
-            title: "Losses",
-            dataIndex: "numLosses",
-            key: "losses",
-            width: 90,
-            sorter: (a, b) => a.numLosses - b.numLosses
-        },
-        {
-            title: "Points",
-            dataIndex: "points",
-            key: "points",
-            width: 90,
-            sorter: (a, b) => a.points - b.points
-        },
-        {
-            title: "Goal Difference",
-            dataIndex: "diff",
-            key: "diff",
-            width: 90,
-            sorter: (a, b) => a.diff - b.diff
-        }
-    ];
+    };
 
     // Show loading spinner while data is being fetched
-    if (loading) {
+    if (loading || !club) {
         return (
             <div style={{ textAlign: "center", padding: "50px" }}>
                 <Spin size="large" />
@@ -463,228 +102,70 @@ const ClientClubDetail = () => {
         );
     }
 
-    if (!club) {
-        return (
-            <div style={{ textAlign: "center", padding: "50px" }}>
-                <Empty description="Club not found" />
-            </div>
-        );
-    }
-
     return (
         <div style={{ padding: "30px" }}>
-            {/* Club Header */}
-            <Card>
-                <Row gutter={16} align="middle">
-                    {/* Club Logo/Avatar */}
-                    <Col span={4} style={{ textAlign: "center" }}>
-                        {club.logo ? (
-                            <img src={club.logo} alt={club.name} style={{ maxWidth: 100, maxHeight: 100 }} />
-                        ) : (
-                            <Avatar size={100}>{club.name.charAt(0)}</Avatar>
-                        )}
-                    </Col>
-
-                    {/* Club Basic Info */}
-                    <Col span={16}>
-                        <Title level={2}>{club.name}</Title>
-                        <Descriptions column={2}>
-                            <Descriptions.Item label="Country">{club.country}</Descriptions.Item>
-                            <Descriptions.Item label="Stadium">{club.stadiumName || 'N/A'}</Descriptions.Item>
-                        </Descriptions>
-                    </Col>
-
-                    {/* Season Selector */}
-                    <Col span={4}>
-                        <Text strong>Season</Text>
-                        <Select
-                            style={{ width: '100%', marginTop: '8px' }}
-                            value={selectedSeason?.id}
-                            onChange={handleSeasonChange}
-                            disabled={seasons.length === 0}
-                        >
-                            {seasons.map(season => (
-                                <Option key={season.id} value={season.id}>
-                                    {season.name} {season.leagueName ? `(${season.leagueName})` : ''}
-                                </Option>
-                            ))}
-                        </Select>
-                    </Col>
-                </Row>
-            </Card>
-
-            <Divider />
-
-            {/* Season-specific data */}
-            {selectedSeason ? (
-                <Tabs defaultActiveKey="squad">
-                    <TabPane tab="Squad" key="squad">
-                        <Card title={`${club.name} Squad - ${selectedSeason.name}`}>
-                            {dataLoading ? (
-                                <div style={{ textAlign: "center", padding: "20px" }}>
-                                    <Spin />
-                                </div>
-                            ) : squadList.length > 0 ? (
-                                <Table
-                                    dataSource={squadList}
-                                    columns={squadColumns}
-                                    rowKey="id"
-                                    pagination={false}
+            <Row gutter={[24, 24]}>
+                <Col xs={24} md={8}>
+                    {club.imagePath && (
+                        <Card>
+                            <div style={{ textAlign: "center" }}>
+                                <img 
+                                    src={getImageUrl(club.imagePath)} 
+                                    alt={club.name}
+                                    style={{ 
+                                        maxWidth: "100%", 
+                                        maxHeight: "300px",
+                                        objectFit: "contain" 
+                                    }}
                                 />
-                            ) : (
-                                <div style={{ textAlign: "center", padding: "20px" }}>
-                                    No player information available for this season
-                                </div>
-                            )}
+                            </div>
                         </Card>
-                    </TabPane>
+                    )}
+                </Col>
+                <Col xs={24} md={16}>
+                    <Descriptions title="Club Details" bordered>
+                        <Descriptions.Item label="Name">{club.name}</Descriptions.Item>
+                        <Descriptions.Item label="Country">{club.country}</Descriptions.Item>
+                        <Descriptions.Item label="Stadium">{club.stadiumName || "N/A"}</Descriptions.Item>
+                    </Descriptions>
+                </Col>
+            </Row>
 
-                    <TabPane tab="Transfers" key="transfers">
-                        <Row gutter={[16, 16]}>
-                            {/* Arrivals */}
-                            <Col span={24}>
-                                <Card
-                                    title={
-                                        <div>
-                                            <span style={{ color: 'green' }}>Arrivals</span>
-                                            <span style={{ fontSize: '14px', color: 'grey', marginLeft: '10px' }}>
-                                                ({arrivals.length} transfers)
-                                            </span>
-                                        </div>
-                                    }
-                                    bordered
-                                >
-                                    {dataLoading ? (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            <Spin />
-                                        </div>
-                                    ) : arrivals.length > 0 ? (
-                                        <Table
-                                            dataSource={arrivals}
-                                            columns={transferColumns.filter(col => col.key !== 'to')}
-                                            rowKey="id"
-                                            pagination={false}
-                                        />
-                                    ) : (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            No arrivals in this season
-                                        </div>
-                                    )}
-                                </Card>
-                            </Col>
-
-                            {/* Departures */}
-                            <Col span={24}>
-                                <Card
-                                    title={
-                                        <div>
-                                            <span style={{ color: 'red' }}>Departures</span>
-                                            <span style={{ fontSize: '14px', color: 'grey', marginLeft: '10px' }}>
-                                                ({departures.length} transfers)
-                                            </span>
-                                        </div>
-                                    }
-                                    bordered
-                                >
-                                    {dataLoading ? (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            <Spin />
-                                        </div>
-                                    ) : departures.length > 0 ? (
-                                        <Table
-                                            dataSource={departures}
-                                            columns={transferColumns.filter(col => col.key !== 'from')}
-                                            rowKey="id"
-                                            pagination={false}
-                                        />
-                                    ) : (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            No departures in this season
-                                        </div>
-                                    )}
-                                </Card>
-                            </Col>
-                        </Row>
-                    </TabPane>
-
-                    <TabPane tab="Statistics" key="statistics">
-                        <Row gutter={[16, 16]}>
-                            <Col span={12}>
-                                <Card title="Top Scorers">
-                                    {statsLoading ? (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            <Spin />
-                                        </div>
-                                    ) : topScorers.length > 0 ? (
-                                        <Table
-                                            dataSource={topScorers}
-                                            columns={statsColumns}
-                                            rowKey="playerId"
-                                            pagination={false}
-                                            size="small"
-                                        />
-                                    ) : (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            No goal scorer data available for this season
-                                        </div>
-                                    )}
-                                </Card>
-                            </Col>
-                            <Col span={12}>
-                                <Card title="Top Assists">
-                                    {statsLoading ? (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            <Spin />
-                                        </div>
-                                    ) : topAssists.length > 0 ? (
-                                        <Table
-                                            dataSource={topAssists}
-                                            columns={assistsColumns}
-                                            rowKey="playerId"
-                                            pagination={false}
-                                            size="small"
-                                        />
-                                    ) : (
-                                        <div style={{ textAlign: "center", padding: "20px" }}>
-                                            No assist data available for this season
-                                        </div>
-                                    )}
-                                </Card>
-                            </Col>
-                        </Row>
-                    </TabPane>
-
-                    <TabPane tab="League Table" key="leagueTable">
-                        <Card title="League Table">
-                            {leagueTableLoading ? (
-                                <div style={{ textAlign: "center", padding: "20px" }}>
-                                    <Spin />
-                                </div>
-                            ) : leagueTableData.length > 0 ? (
-                                <Table
-                                    dataSource={leagueTableData}
-                                    columns={leagueTableColumns}
-                                    rowKey="club.id"
-                                    pagination={false}
-                                    size="small"
-                                    rowClassName={(record) => record.isCurrentClub ? 'highlight-row' : ''}
-                                    onRow={(record) => ({
-                                        style: record.isCurrentClub ? { backgroundColor: '#f0f7ff', fontWeight: 'bold' } : {}
-                                    })}
+            {/* Tabs for Squad and Transfers */}
+            <div style={{ marginTop: "30px" }}>
+                <Tabs
+                    activeKey={activeTab}
+                    onChange={(key) => setActiveTab(key)}
+                    items={[
+                        {
+                            key: "1",
+                            label: "Squad",
+                            children: (
+                                <ClubSquad
+                                    squad={squad}
+                                    seasons={seasons}
+                                    selectedSeason={selectedSeason}
+                                    setSelectedSeason={setSelectedSeason}
+                                    loading={loadingSquad}
                                 />
-                            ) : (
-                                <div style={{ textAlign: "center", padding: "20px" }}>
-                                    No league table data available for this season
-                                </div>
-                            )}
-                        </Card>
-                    </TabPane>
-                </Tabs>
-            ) : (
-                <div style={{ textAlign: "center", padding: "50px" }}>
-                    No season data available for this club
-                </div>
-            )}
+                            ),
+                        },
+                        {
+                            key: "2",
+                            label: "Transfers",
+                            children: (
+                                <ClubTransferHistory
+                                    transfers={transfers}
+                                    seasons={seasons}
+                                    selectedSeason={selectedSeason}
+                                    setSelectedSeason={setSelectedSeason}
+                                    loading={loadingTransfers}
+                                />
+                            ),
+                        },
+                    ]}
+                />
+            </div>
         </div>
     );
 };

@@ -1,150 +1,153 @@
-import React, { useState } from "react";
-import { Upload, message, Button, Spin, Modal } from "antd";
-import { UploadOutlined, EyeOutlined } from "@ant-design/icons";
-import PropTypes from "prop-types";
+import React, { useState, useEffect } from 'react';
+import { Upload, message, Button } from 'antd';
+import { UploadOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 
-const ImageUpload = ({ 
-  initialImageUrl, 
-  onImageChange, 
-  entityName = "item",
-  maxSize = 10 // Max file size in MB
-}) => {
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewImage, setPreviewImage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [fileList, setFileList] = useState([]);
-  
-  // Set initial image if provided
-  React.useEffect(() => {
-    if (initialImageUrl) {
-      // If we have an initial image URL, create a file object for display
-      setFileList([
-        {
-          uid: "-1",
-          name: "current-image.jpg",
-          status: "done",
-          url: initialImageUrl,
-        },
-      ]);
-    } else {
-      setFileList([]);
-    }
-  }, [initialImageUrl]);
+/**
+ * A reusable image upload component with preview functionality
+ * 
+ * @param {Object} props
+ * @param {string} props.initialImageUrl - The initial image URL (for edit mode)
+ * @param {function} props.onImageChange - Callback function when image is changed
+ * @param {string} props.entityName - The name of the entity (Player, Coach, etc.)
+ */
+const ImageUpload = ({ initialImageUrl, onImageChange, entityName = "Entity" }) => {
+    const [loading, setLoading] = useState(false);
+    const [imageUrl, setImageUrl] = useState(initialImageUrl);
+    const [fileList, setFileList] = useState([]);
 
-  // Check if file is an image and within size limit
-  const beforeUpload = (file) => {
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-      message.error("You can only upload image files!");
-      return Upload.LIST_IGNORE;
-    }
-    
-    const isLessThan10MB = file.size / 1024 / 1024 < maxSize;
-    if (!isLessThan10MB) {
-      message.error(`Image must be smaller than ${maxSize}MB!`);
-      return Upload.LIST_IGNORE;
-    }
-    
-    return false; // Prevent auto upload
-  };
+    // Update image URL when initialImageUrl prop changes (useful for edit forms)
+    useEffect(() => {
+        if (initialImageUrl) {
+            setImageUrl(initialImageUrl);
+            // Clear the file list to avoid confusion between initial image and newly selected one
+            setFileList([]);
+        } else {
+            setImageUrl(null);
+        }
+    }, [initialImageUrl]);
 
-  const handleChange = (info) => {
-    let newFileList = [...info.fileList];
-    
-    // Only keep the latest file if multiple files are uploaded
-    newFileList = newFileList.slice(-1);
-    
-    // Update status
-    newFileList = newFileList.map(file => {
-      if (file.response) {
-        file.url = file.response.url;
-      }
-      return file;
-    });
-    
-    setFileList(newFileList);
-    
-    // Call the parent's onImageChange with the new file
-    if (newFileList.length > 0 && newFileList[0].originFileObj) {
-      onImageChange(newFileList[0].originFileObj);
-    } else {
-      onImageChange(null); // No file selected
-    }
-  };
+    // Validate file before upload
+    const beforeUpload = (file) => {
+        const isImage = file.type.startsWith('image/');
+        if (!isImage) {
+            message.error('You can only upload image files!');
+            return false;
+        }
+        
+        // Check file size (limit to 10MB)
+        const isLt10M = file.size / 1024 / 1024 < 10;
+        if (!isLt10M) {
+            message.error('Image must be smaller than 10MB!');
+            return false;
+        }
+        
+        // Since we're handling the file ourselves and not uploading automatically,
+        // we need to return false to prevent auto upload
+        return false;
+    };
 
-  const handlePreview = async (file) => {
-    if (file.url) {
-      setPreviewImage(file.url);
-      setPreviewVisible(true);
-    } else if (file.originFileObj) {
-      // Create a preview URL for the selected file
-      const previewURL = URL.createObjectURL(file.originFileObj);
-      setPreviewImage(previewURL);
-      setPreviewVisible(true);
-      
-      // Clean up the URL when done
-      return () => URL.revokeObjectURL(previewURL);
-    }
-  };
+    // Handle file change events
+    const handleChange = (info) => {
+        // We only care about the most recent file
+        const file = info.fileList[0]?.originFileObj;
+        
+        if (file) {
+            // Preview the image
+            setLoading(true);
+            
+            // Create a blob URL for preview
+            const objectUrl = URL.createObjectURL(file);
+            setImageUrl(objectUrl);
+            setLoading(false);
+            
+            // Call the parent's onImageChange callback
+            onImageChange(file);
+            
+            // Update file list to show the file in the uploader component
+            setFileList([{
+                uid: '-1',
+                name: file.name,
+                status: 'done',
+                url: objectUrl,
+            }]);
+        } else {
+            // If no file selected (user removed it), reset
+            setImageUrl(initialImageUrl);
+            setFileList([]);
+            onImageChange(null);
+        }
+    };
 
-  const handleRemove = () => {
-    // Signal that the image has been removed
-    onImageChange(null);
-    return true;
-  };
+    // Handle file removal
+    const handleRemove = () => {
+        setImageUrl(initialImageUrl);
+        setFileList([]);
+        onImageChange(null);
+        return true;
+    };
 
-  const uploadButton = (
-    <Button icon={<UploadOutlined />}>Select Image</Button>
-  );
+    // The upload button UI
+    const uploadButton = (
+        <div>
+            {loading ? <LoadingOutlined /> : <PlusOutlined />}
+            <div style={{ marginTop: 8 }}>Upload</div>
+        </div>
+    );
 
-  return (
-    <div className="upload-container">
-      <Upload
-        listType="picture-card"
-        fileList={fileList}
-        beforeUpload={beforeUpload}
-        onChange={handleChange}
-        onPreview={handlePreview}
-        onRemove={handleRemove}
-        customRequest={({ onSuccess }) => {
-          // Simulate a success to show the image in the list
-          setTimeout(() => {
-            onSuccess("ok");
-          }, 0);
-        }}
-      >
-        {fileList.length >= 1 ? null : uploadButton}
-      </Upload>
-      
-      {loading && <Spin tip="Processing image..." />}
-      
-      {fileList.length > 0 && (
-        <Button 
-          type="link" 
-          icon={<EyeOutlined />} 
-          onClick={() => handlePreview(fileList[0])}
-        >
-          Preview
-        </Button>
-      )}
-
-      <Modal
-        open={previewVisible}
-        title={`${entityName} Image Preview`}
-        footer={null}
-        onCancel={() => setPreviewVisible(false)}
-      >
-        <img alt="preview" style={{ width: '100%' }} src={previewImage} />
-      </Modal>
-    </div>
-  );
-};
-
-ImageUpload.propTypes = {
-  initialImageUrl: PropTypes.string,
-  onImageChange: PropTypes.func.isRequired,
-  entityName: PropTypes.string,
-  maxSize: PropTypes.number
+    return (
+        <div>
+            <Upload
+                name="image"
+                listType="picture-card"
+                className="avatar-uploader"
+                showUploadList={true}
+                beforeUpload={beforeUpload}
+                onChange={handleChange}
+                onRemove={handleRemove}
+                fileList={fileList}
+                maxCount={1}
+            >
+                {imageUrl && fileList.length === 0 ? (
+                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                        <img
+                            src={imageUrl}
+                            alt={`${entityName} Image`}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'contain',
+                            }}
+                        />
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            background: 'rgba(0,0,0,0.3)',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            color: 'white',
+                            opacity: 0,
+                            transition: 'opacity 0.3s',
+                            cursor: 'pointer',
+                            ':hover': {
+                                opacity: 1,
+                            }
+                        }}>
+                            Click to change
+                        </div>
+                    </div>
+                ) : (imageUrl && fileList.length > 0) || !imageUrl ? (
+                    uploadButton
+                ) : null}
+            </Upload>
+            <p style={{ marginTop: 8 }}>
+                {!imageUrl ? `Upload a ${entityName} image (Max: 10MB)` : 'Click the image to change it'}
+            </p>
+        </div>
+    );
 };
 
 export default ImageUpload;

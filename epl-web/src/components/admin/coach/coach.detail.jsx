@@ -1,8 +1,8 @@
 // epl-web/src/components/admin/coach/coach.detail.jsx
 import { useEffect, useState } from "react";
-import { Descriptions, Spin } from "antd";
+import { Descriptions, Spin, Row, Col, Card } from "antd";
 import { useParams } from "react-router-dom";
-import { fetchCoachDetailAPI } from "../../../services/api.service.js";
+import { fetchCoachDetailAPI, getImageUrl } from "../../../services/api.service.js";
 import CoachClubHistoryTable from "../coach-club/coach-club.history.table.jsx";
 import CreateCoachClubButton from "../coach-club/create.coach-club.button.jsx";
 
@@ -79,21 +79,42 @@ const AdminCoachDetail = () => {
 
     return (
         <div style={{ padding: "30px" }}>
-            <Descriptions title="Head Coach Details" bordered>
-                <Descriptions.Item label="ID">{coach.id}</Descriptions.Item>
-                <Descriptions.Item label="Name">{coach.name}</Descriptions.Item>
-                <Descriptions.Item label="Age">{coach.age}</Descriptions.Item>
-                <Descriptions.Item label="Date of Birth">{formatDate(coach.dob)}</Descriptions.Item>
-                <Descriptions.Item label="Citizenship">
-                    {Array.isArray(coach.citizenships) ? coach.citizenships.join(', ') : coach.citizenships}
-                </Descriptions.Item>
-                <Descriptions.Item label="Current Club">
-                    {coach.coachClubs && coach.coachClubs.length > 0 ?
-                        (typeof coach.coachClubs[0].club === 'object' ?
-                            coach.coachClubs[0].club.name : coach.coachClubs[0].club) :
-                        "No club"}
-                </Descriptions.Item>
-            </Descriptions>
+            <Row gutter={[24, 24]}>
+                <Col xs={24} md={8}>
+                    {coach.imagePath && (
+                        <Card>
+                            <div style={{ textAlign: "center" }}>
+                                <img 
+                                    src={getImageUrl(coach.imagePath)} 
+                                    alt={coach.name}
+                                    style={{ 
+                                        maxWidth: "100%", 
+                                        maxHeight: "300px",
+                                        objectFit: "contain" 
+                                    }}
+                                />
+                            </div>
+                        </Card>
+                    )}
+                </Col>
+                <Col xs={24} md={16}>
+                    <Descriptions title="Head Coach Details" bordered>
+                        <Descriptions.Item label="ID">{coach.id}</Descriptions.Item>
+                        <Descriptions.Item label="Name">{coach.name}</Descriptions.Item>
+                        <Descriptions.Item label="Age">{coach.age}</Descriptions.Item>
+                        <Descriptions.Item label="Date of Birth">{formatDate(coach.dob)}</Descriptions.Item>
+                        <Descriptions.Item label="Citizenship">
+                            {Array.isArray(coach.citizenships) ? coach.citizenships.join(', ') : coach.citizenships}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Current Club">
+                            {coach.coachClubs && coach.coachClubs.length > 0 ?
+                                (typeof coach.coachClubs[0].club === 'object' ?
+                                    coach.coachClubs[0].club.name : coach.coachClubs[0].club) :
+                                "No club"}
+                        </Descriptions.Item>
+                    </Descriptions>
+                </Col>
+            </Row>
 
             <div style={{ marginTop: "30px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>

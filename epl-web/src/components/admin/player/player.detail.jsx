@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Descriptions, Spin, Row, Col, Card } from "antd";
 import { useParams } from "react-router-dom";
-import { fetchPlayerDetailAPI } from "../../../services/api.service.js";
+import { fetchPlayerDetailAPI, getImageUrl } from "../../../services/api.service.js";
 import TransferHistoryTable from "../transfer-history/transfer.history.table.jsx";
 import CreateTransferButton from "../transfer-history/create.transfer.button.jsx";
 
@@ -40,11 +40,6 @@ const AdminPlayerDetail = () => {
             month: 'long',
             day: 'numeric'
         });
-    };
-
-    // Function to get image URL
-    const getImageUrl = (path) => {
-        return `/images/${path}`;
     };
 
     // Show loading spinner while data is being fetched
