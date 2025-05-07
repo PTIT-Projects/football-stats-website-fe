@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import {Table, Card, Alert, Button, Tag, Image} from "antd";
+import {Table, Card, Alert, Button, Tag, Image, Input} from "antd";
 import { fetchAllCoachesAPI } from "../../../services/api.service.js";
 
 const ClientCoachTable = () => {
+    const { Search } = Input;
     const [searchParams] = useSearchParams();
     const [filterInfo, setFilterInfo] = useState(null);
     const [coaches, setCoaches] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -16,6 +18,24 @@ const ClientCoachTable = () => {
 
     const citizenship = searchParams.get('citizenship');
     const club = searchParams.get('club');
+
+    const buildQueryParams = (params = {}, customSearchTerm) => {
+        let filterParts = [];
+        if (citizenship) filterParts.push(`citizenships : '${citizenship}'`);
+        if (club) filterParts.push(`coachClubs.club.id : ${club}`);
+        const term = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+        if (term) filterParts.push(`name ~ '${term}'`);
+        return {
+            page: params.current || pagination.current,
+            size: params.pageSize || pagination.pageSize,
+            filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+        };
+    };
+
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchCoaches({ current: 1 }, value);
+    };
 
     useEffect(() => {
         if (citizenship || club) {
@@ -31,28 +51,11 @@ const ClientCoachTable = () => {
         }
     }, [citizenship, club]);
 
-    const fetchCoaches = async (params = {}) => {
+    const fetchCoaches = async (params = {}, customSearchTerm) => {
         setLoading(true);
         try {
-
-            let filterParts = [];
-
-            if (citizenship) {
-                filterParts.push(`citizenships : '${citizenship}'`);
-            }
-
-            if (club) {
-                filterParts.push(`coachClubs.club.id : ${club}`);
-            }
-
-            const queryParams = {
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize,
-                filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
-            };
-
+            const queryParams = buildQueryParams(params, customSearchTerm);
             const response = await fetchAllCoachesAPI(queryParams);
-
             if (response.data && response.data.result) {
                 setCoaches(response.data.result);
                 setPagination({
@@ -181,6 +184,16 @@ const ClientCoachTable = () => {
                 </Card>
             )}
             <Card title="Head Coach Table">
+                <div style={{ marginBottom: 16 }}>
+                    <Search
+                        placeholder="Search coaches by name"
+                        allowClear
+                        enterButton="Search"
+                        size="large"
+                        onSearch={handleSearch}
+                        style={{ maxWidth: 500 }}
+                    />
+                </div>
                 <Table
                     columns={columns}
                     dataSource={coaches}
