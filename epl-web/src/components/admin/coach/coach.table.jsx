@@ -1,12 +1,13 @@
-
 import { useState, useEffect } from "react";
-import {Button, Space, Table, Card, Image} from "antd";
+import { Button, Space, Table, Card, Image, Input } from "antd";
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import CreateCoachModal from "./coach.create.jsx";
 import EditCoachModal from "./coach.edit.jsx";
 import DeleteCoachButton from "./coach.delete.jsx";
 import { fetchAllCoachesAPI } from "../../../services/api.service.js";
 import { Link } from "react-router-dom";
+
+const { Search } = Input;
 
 const AdminCoachTable = () => {
 
@@ -20,16 +21,24 @@ const AdminCoachTable = () => {
         total: 0
     });
     const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
 
-    const fetchData = async (params = {}) => {
+    const buildQueryParams = (params = {}, customSearchTerm) => {
+        let filterParts = [];
+        const term = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+        if (term) filterParts.push(`name ~ '${term}'`);
+        return {
+            page: params.current || pagination.current,
+            size: params.pageSize || pagination.pageSize,
+            filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+        };
+    };
+
+    const fetchCoaches = async (params = {}, customSearchTerm) => {
         setLoading(true);
         try {
-            const response = await fetchAllCoachesAPI({
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize,
-                sort: params.field && params.order ? `${params.field},${params.order === 'ascend' ? 'asc' : 'desc'}` : undefined
-            });
-
+            const queryParams = buildQueryParams(params, customSearchTerm);
+            const response = await fetchAllCoachesAPI(queryParams);
             if (response.data && response.data.result) {
                 setData(response.data.result);
                 setPagination({
@@ -45,12 +54,17 @@ const AdminCoachTable = () => {
         }
     };
 
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchCoaches({ current: 1 }, value);
+    };
+
     useEffect(() => {
-        fetchData();
+        fetchCoaches();
     }, []);
 
     const handleTableChange = (newPagination, filters, sorter) => {
-        fetchData({
+        fetchCoaches({
             current: newPagination.current,
             pageSize: newPagination.pageSize,
             field: sorter.field,
@@ -69,16 +83,16 @@ const AdminCoachTable = () => {
 
     const handleCreateSuccess = () => {
         setIsCreateModalOpen(false);
-        fetchData({ current: 1 });
+        fetchCoaches({ current: 1 });
     };
 
     const handleEditSuccess = () => {
         setIsEditModalOpen(false);
-        fetchData({ current: pagination.current });
+        fetchCoaches({ current: pagination.current });
     };
 
     const handleDeleteSuccess = () => {
-        fetchData({ current: pagination.current });
+        fetchCoaches({ current: pagination.current });
     };
 
     const columns = [
@@ -169,6 +183,16 @@ const AdminCoachTable = () => {
                     </Button>
                 }
             >
+                <div style={{ marginBottom: 16 }}>
+                    <Search
+                        placeholder="Search coaches by name"
+                        allowClear
+                        enterButton="Search"
+                        size="large"
+                        onSearch={handleSearch}
+                        style={{ maxWidth: 500 }}
+                    />
+                </div>
                 <Table
                     columns={columns}
                     dataSource={data}

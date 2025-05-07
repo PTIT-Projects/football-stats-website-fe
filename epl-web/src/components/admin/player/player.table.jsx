@@ -1,12 +1,13 @@
-
 import { useState, useEffect } from "react";
-import {Button, Space, Table, Card, Image} from "antd";
+import { Button, Space, Table, Card, Image, Input } from "antd";
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Link } from "react-router-dom";
 import { fetchAllPlayersAPI } from "../../../services/api.service.js";
 import CreatePlayerModal from "./player.create.jsx";
 import EditPlayerModal from "./player.edit.jsx";
 import DeletePlayerButton from "./player.delete.jsx";
+
+const { Search } = Input;
 
 const AdminPlayerTable = () => {
 
@@ -20,23 +21,27 @@ const AdminPlayerTable = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentPlayer, setCurrentPlayer] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
-    useEffect(() => {
-        loadPlayers();
-    }, []);
+    const buildQueryParams = (params = {}, customSearchTerm) => {
+        let filterParts = [];
+        const term = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+        if (term) filterParts.push(`name ~ '${term}'`);
+        return {
+            page: params.current || pagination.current,
+            size: params.pageSize || pagination.pageSize,
+            filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+        };
+    };
 
-    const loadPlayers = async (page = pagination.current, pageSize = pagination.pageSize) => {
+    const fetchPlayers = async (params = {}, customSearchTerm) => {
         setLoading(true);
         try {
-            const response = await fetchAllPlayersAPI({
-                page: page,
-                size: pageSize
-            });
-
+            const queryParams = buildQueryParams(params, customSearchTerm);
+            const response = await fetchAllPlayersAPI(queryParams);
             if (response.data && response.data.result) {
                 setPlayers(response.data.result);
                 setPagination({
-                    ...pagination,
                     current: response.data.meta.page,
                     pageSize: response.data.meta.pageSize,
                     total: response.data.meta.total
@@ -49,8 +54,17 @@ const AdminPlayerTable = () => {
         }
     };
 
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchPlayers({ current: 1 }, value);
+    };
+
+    useEffect(() => {
+        fetchPlayers();
+    }, []);
+
     const handleTableChange = (newPagination) => {
-        loadPlayers(newPagination.current, newPagination.pageSize);
+        fetchPlayers(newPagination);
     };
 
     const showCreateModal = () => {
@@ -64,16 +78,16 @@ const AdminPlayerTable = () => {
 
     const handleCreateSuccess = () => {
         setIsCreateModalOpen(false);
-        loadPlayers(1); // Go to first page to see new player
+        fetchPlayers({ current: 1 }); // Go to first page to see new player
     };
 
     const handleEditSuccess = () => {
         setIsEditModalOpen(false);
-        loadPlayers(pagination.current); // Reload current page
+        fetchPlayers({ current: pagination.current }); // Reload current page
     };
 
     const handleDeleteSuccess = () => {
-        loadPlayers(pagination.current); // Reload current page
+        fetchPlayers({ current: pagination.current }); // Reload current page
     };
 
     const columns = [
@@ -185,6 +199,16 @@ const AdminPlayerTable = () => {
                     </Button>
                 }
             >
+                <div style={{ marginBottom: 16 }}>
+                    <Search
+                        placeholder="Search players by name"
+                        allowClear
+                        enterButton="Search"
+                        size="large"
+                        onSearch={handleSearch}
+                        style={{ maxWidth: 500 }}
+                    />
+                </div>
                 <Table
                     columns={columns}
                     dataSource={players}
