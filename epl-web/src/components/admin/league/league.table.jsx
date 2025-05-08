@@ -1,12 +1,13 @@
-
 import { useState, useEffect } from "react";
-import {Button, Space, Table, Card, Image} from "antd";
+import { Button, Space, Table, Card, Image, Input } from "antd";
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { fetchAllLeaguesAPI } from "../../../services/api.service.js";
 import { Link } from "react-router-dom";
 import CreateLeagueModal from "./league.create.jsx";
 import EditLeagueModal from "./league.edit.jsx";
 import DeleteLeagueButton from "./league.delete.jsx";
+
+const { Search } = Input;
 
 const AdminLeagueTable = () => {
 
@@ -20,16 +21,24 @@ const AdminLeagueTable = () => {
         total: 0
     });
     const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
 
-    const fetchData = async (params = {}) => {
+    const buildQueryParams = (params = {}, customSearchTerm) => {
+        let filterParts = [];
+        const term = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+        if (term) filterParts.push(`name ~ '${term}'`);
+        return {
+            page: params.current || pagination.current,
+            size: params.pageSize || pagination.pageSize,
+            filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+        };
+    };
+
+    const fetchLeagues = async (params = {}, customSearchTerm) => {
         setLoading(true);
         try {
-            const response = await fetchAllLeaguesAPI({
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize,
-                sort: params.field && params.order ? `${params.field},${params.order === 'ascend' ? 'asc' : 'desc'}` : undefined
-            });
-
+            const queryParams = buildQueryParams(params, customSearchTerm);
+            const response = await fetchAllLeaguesAPI(queryParams);
             if (response.data && response.data.result) {
                 setData(response.data.result);
                 setPagination({
@@ -38,7 +47,6 @@ const AdminLeagueTable = () => {
                     total: response.data.meta.total
                 });
             } else if (Array.isArray(response.data)) {
-
                 setData(response.data);
                 setPagination(prev => ({
                     ...prev,
@@ -52,12 +60,17 @@ const AdminLeagueTable = () => {
         }
     };
 
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchLeagues({ current: 1 }, value);
+    };
+
     useEffect(() => {
-        fetchData();
+        fetchLeagues();
     }, []);
 
     const handleTableChange = (newPagination, filters, sorter) => {
-        fetchData({
+        fetchLeagues({
             current: newPagination.current,
             pageSize: newPagination.pageSize,
             field: sorter.field,
@@ -76,16 +89,16 @@ const AdminLeagueTable = () => {
 
     const handleCreateSuccess = () => {
         setIsCreateModalOpen(false);
-        fetchData({ current: 1 });
+        fetchLeagues({ current: 1 });
     };
 
     const handleEditSuccess = () => {
         setIsEditModalOpen(false);
-        fetchData({ current: pagination.current });
+        fetchLeagues({ current: pagination.current });
     };
 
     const handleDeleteSuccess = () => {
-        fetchData({ current: pagination.current });
+        fetchLeagues({ current: pagination.current });
     };
 
     const columns = [
@@ -155,6 +168,16 @@ const AdminLeagueTable = () => {
                     </Button>
                 }
             >
+                <div style={{ marginBottom: 16 }}>
+                    <Search
+                        placeholder="Search leagues by name"
+                        allowClear
+                        enterButton="Search"
+                        size="large"
+                        onSearch={handleSearch}
+                        style={{ maxWidth: 500 }}
+                    />
+                </div>
                 <Table
                     columns={columns}
                     dataSource={data}

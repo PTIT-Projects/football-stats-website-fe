@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import {Button, Space, Table, Card, Image} from "antd";
+import { Button, Space, Table, Card, Image, Input } from "antd";
 import { EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { fetchAllClubsWithPaginationAPI } from "../../../services/api.service.js";
 import { Link } from "react-router-dom";
 import CreateClubModal from "./club.create.jsx";
 import EditClubModal from "./club.edit.jsx";
 import DeleteClubButton from "./club.delete.jsx";
+
+const { Search } = Input;
 
 const AdminClubTable = () => {
     const [data, setData] = useState([]);
@@ -15,25 +17,34 @@ const AdminClubTable = () => {
         total: 0,
     });
     const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentClub, setCurrentClub] = useState(null);
 
-    const fetchData = async (params = {}) => {
+    const buildQueryParams = (params = {}, customSearchTerm) => {
+        let filterParts = [];
+        const term = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+        if (term) filterParts.push(`name ~ '${term}'`);
+        return {
+            page: params.current || pagination.current,
+            size: params.pageSize || pagination.pageSize,
+            filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+        };
+    };
+
+    const fetchClubs = async (params = {}, customSearchTerm) => {
         setLoading(true);
         try {
-            const response = await fetchAllClubsWithPaginationAPI({
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize,
-            });
-
+            const queryParams = buildQueryParams(params, customSearchTerm);
+            const response = await fetchAllClubsWithPaginationAPI(queryParams);
             if (response.data && response.data.result) {
                 setData(response.data.result);
                 setPagination({
                     current: response.data.meta.page,
                     pageSize: response.data.meta.pageSize,
-                    total: response.data.meta.total,
+                    total: response.data.meta.total
                 });
             }
         } catch (error) {
@@ -43,12 +54,17 @@ const AdminClubTable = () => {
         }
     };
 
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchClubs({ current: 1 }, value);
+    };
+
     useEffect(() => {
-        fetchData();
+        fetchClubs();
     }, []);
 
     const handleTableChange = (newPagination) => {
-        fetchData({
+        fetchClubs({
             current: newPagination.current,
             pageSize: newPagination.pageSize,
         });
@@ -56,16 +72,16 @@ const AdminClubTable = () => {
 
     const handleCreateSuccess = () => {
         setIsCreateModalOpen(false);
-        fetchData({ current: 1 });
+        fetchClubs({ current: 1 });
     };
 
     const handleEditSuccess = () => {
         setIsEditModalOpen(false);
-        fetchData({ current: pagination.current });
+        fetchClubs({ current: pagination.current });
     };
 
     const handleDeleteSuccess = () => {
-        fetchData({ current: pagination.current });
+        fetchClubs({ current: pagination.current });
     };
 
     const columns = [
@@ -146,6 +162,16 @@ const AdminClubTable = () => {
                     </Button>
                 }
             >
+                <div style={{ marginBottom: 16 }}>
+                    <Search
+                        placeholder="Search clubs by name"
+                        allowClear
+                        enterButton="Search"
+                        size="large"
+                        onSearch={handleSearch}
+                        style={{ maxWidth: 500 }}
+                    />
+                </div>
                 <Table
                     columns={columns}
                     dataSource={data}

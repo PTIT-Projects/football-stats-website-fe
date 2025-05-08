@@ -1,17 +1,17 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import {Table, Card, Alert, Button, Tag, Image} from "antd";
+import {Table, Card, Alert, Button, Tag, Image, Input} from "antd";
 import { fetchAllPlayersAPI } from "../../../services/api.service.js";
 
 const ClientPlayerTable = () => {
-
+    const { Search } = Input;
     const [searchParams] = useSearchParams();
     const position = searchParams.get('position');
     const citizenship = searchParams.get('citizenship');
     const transferType = searchParams.get('transferType');
     const club = searchParams.get('club');
-
+    const [searchTerm, setSearchTerm] = useState("");
     const [filterInfo, setFilterInfo] = useState(null);
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -20,12 +20,30 @@ const ClientPlayerTable = () => {
         pageSize: 10,
         total: 0
     });
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchPlayers({ current: 1 }, value);
+    };
+    const buildQueryParams = (params = {}, customSearchTerm) => {
+        let filterParts = [];
 
+        if (position) filterParts.push(`positions : '${position}'`);
+        if (citizenship) filterParts.push(`citizenships : '${citizenship}'`);
+        if (transferType) filterParts.push(`transferHistories.type : '${transferType}'`);
+        if (club) filterParts.push(`transferHistories.club.id : ${club}`);
+        const term = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+        if (term) filterParts.push(`name ~ '${term}'`);
+
+        return {
+            page: params.current || pagination.current,
+            size: params.pageSize || pagination.pageSize,
+            filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+        };
+    };
     useEffect(() => {
         if (position || citizenship || transferType || club) {
             let filterText = "Filtering by: ";
             let filters = [];
-
             if (position) filters.push(`Position "${position}"`);
             if (citizenship) filters.push(`Nationality "${citizenship}"`);
             if (transferType) filters.push(`Transfer Type "${transferType}"`);
@@ -37,34 +55,10 @@ const ClientPlayerTable = () => {
         }
     }, [position, citizenship, transferType, club]);
 
-    const fetchPlayers = async (params = {}) => {
+    const fetchPlayers = async (params = {}, customSearchTerm) => {
         setLoading(true);
         try {
-
-            let filterParts = [];
-
-            if (position) {
-                filterParts.push(`positions : '${position}'`);
-            }
-
-            if (citizenship) {
-                filterParts.push(`citizenships : '${citizenship}'`);
-            }
-
-            if (transferType) {
-                filterParts.push(`transferHistories.type : '${transferType}'`);
-            }
-
-            if (club) {
-                filterParts.push(`transferHistories.club.id : ${club}`);
-            }
-
-            const queryParams = {
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize,
-                filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
-            };
-
+            const queryParams = buildQueryParams(params, customSearchTerm);
             const response = await fetchAllPlayersAPI(queryParams);
 
             if (response.data && response.data.result) {
@@ -219,6 +213,16 @@ const ClientPlayerTable = () => {
                 </Card>
             )}
             <Card title="Player Table">
+                <div style={{ marginBottom: 16 }}>
+                    <Search
+                        placeholder="Search players by name"
+                        allowClear
+                        enterButton="Search"
+                        size="large"
+                        onSearch={handleSearch}
+                        style={{ maxWidth: 500 }}
+                    />
+                </div>
                 <Table
                     columns={columns}
                     dataSource={players}

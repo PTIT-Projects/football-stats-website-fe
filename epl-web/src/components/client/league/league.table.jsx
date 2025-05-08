@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import {Table, Card, Image} from "antd";
+import { Table, Card, Image, Input } from "antd";
 import { Link } from "react-router-dom";
 import { fetchAllLeaguesAPI } from "../../../services/api.service.js";
 
 const ClientLeagueTable = () => {
+    const { Search } = Input;
     const [leagues, setLeagues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({
@@ -11,15 +12,24 @@ const ClientLeagueTable = () => {
         pageSize: 10,
         total: 0
     });
+    const [searchTerm, setSearchTerm] = useState("");
 
-    const fetchLeagues = async (params = {}) => {
+    const buildQueryParams = (params = {}, customSearchTerm) => {
+        let filterParts = [];
+        const term = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+        if (term) filterParts.push(`name ~ '${term}'`);
+        return {
+            page: params.current || pagination.current,
+            size: params.pageSize || pagination.pageSize,
+            filter: filterParts.length > 0 ? filterParts.join(' and ') : undefined
+        };
+    };
+
+    const fetchLeagues = async (params = {}, customSearchTerm) => {
         setLoading(true);
         try {
-            const response = await fetchAllLeaguesAPI({
-                page: params.current || pagination.current,
-                size: params.pageSize || pagination.pageSize
-            });
-
+            const queryParams = buildQueryParams(params, customSearchTerm);
+            const response = await fetchAllLeaguesAPI(queryParams);
             if (response.data && response.data.result) {
                 setLeagues(response.data.result);
                 setPagination({
@@ -28,13 +38,14 @@ const ClientLeagueTable = () => {
                     total: response.data.meta.total
                 });
             } else if (Array.isArray(response.data)) {
-                
                 setLeagues(response.data);
                 setPagination(prev => ({
                     ...prev,
                     total: response.data.length
                 }));
             }
+
+    
         } catch (error) {
             console.error("Failed to fetch leagues:", error);
         } finally {
@@ -42,12 +53,16 @@ const ClientLeagueTable = () => {
         }
     };
 
+    const handleSearch = (value) => {
+        setSearchTerm(value);
+        fetchLeagues({ current: 1 }, value);
+    };
+
     useEffect(() => {
         fetchLeagues();
     }, []);
 
     const handleTableChange = (newPagination, filters, sorter) => {
-        
         if (newPagination.current !== pagination.current ||
             newPagination.pageSize !== pagination.pageSize) {
             fetchLeagues({
@@ -85,6 +100,16 @@ const ClientLeagueTable = () => {
 
     return (
         <Card title="League Table">
+            <div style={{ marginBottom: 16 }}>
+                <Search
+                    placeholder="Search leagues by name"
+                    allowClear
+                    enterButton="Search"
+                    size="large"
+                    onSearch={handleSearch}
+                    style={{ maxWidth: 500 }}
+                />
+            </div>
             <Table
                 columns={columns}
                 dataSource={leagues}
