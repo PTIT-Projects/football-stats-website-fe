@@ -470,7 +470,23 @@ const ClientClubDetail = () => {
 
                     {/* Club Basic Info */}
                     <Col span={16}>
-                        <Title level={2}>{club.name}</Title>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Title level={2}>{club.name}</Title>
+                            {seasons.length > 0 && (
+                                <Select
+                                    placeholder="Select Season"
+                                    style={{ width: 200 }}
+                                    value={selectedSeason?.id}
+                                    onChange={handleSeasonChange}
+                                >
+                                    {seasons.map(season => (
+                                        <Option key={season.id} value={season.id}>
+                                            {season.name}
+                                        </Option>
+                                    ))}
+                                </Select>
+                            )}
+                        </div>
                         <Descriptions column={2}>
                             <Descriptions.Item label="Country">{club.country}</Descriptions.Item>
                             <Descriptions.Item label="Stadium">{club.stadiumName || 'N/A'}</Descriptions.Item>
