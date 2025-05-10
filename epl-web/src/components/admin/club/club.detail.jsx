@@ -9,15 +9,9 @@ const AdminClubDetail = () => {
     const {id} = useParams();
     const [club, setClub] = useState(null);;
     const [loading, setLoading] = useState(true);
-    const [isImageUploaderVisible, setIsImageUploaderVisible] = useState(false);
-
     useEffect(() => {
         loadClubDetail();
     }, [id]);
-    const handleImageUploadComplete = () => {
-        setIsImageUploaderVisible(false);
-        loadClubDetail(); // Reload club data to get the updated image
-    };
     const loadClubDetail = async () => {
         setLoading(true);
         try {
