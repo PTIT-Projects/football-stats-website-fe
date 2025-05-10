@@ -45,22 +45,6 @@ const AdminClubDetail = () => {
         <div style={{ padding: "30px" }}>
             <Card
                 title="Club Information"
-                extra={
-                    <Space>
-                        <Button
-                            type="primary"
-                            icon={<UploadOutlined />}
-                            onClick={() => setIsImageUploaderVisible(true)}
-                        >
-                            Upload Logo
-                        </Button>
-                        <Link to={`/admin/clubs/${id}/edit`}>
-                            <Button type="primary" icon={<EditOutlined />}>
-                                Edit
-                            </Button>
-                        </Link>
-                    </Space>
-                }
             >
                 <Row gutter={24}>
                     <Col span={8} style={{ textAlign: 'center' }}>
@@ -81,22 +65,6 @@ const AdminClubDetail = () => {
                     </Col>
                 </Row>
             </Card>
-
-            {/* Image uploader modal */}
-            {isImageUploaderVisible && (
-                <Modal
-                    title="Upload Club Logo"
-                    visible={isImageUploaderVisible}
-                    onCancel={() => setIsImageUploaderVisible(false)}
-                    footer={null}
-                >
-                    <ImageUploader
-                        entityType="club"
-                        initialImageUrl={club.imageUrl}
-                        onImageUpload={handleImageUploadComplete}
-                    />
-                </Modal>
-            )}
         </div>
     );
 

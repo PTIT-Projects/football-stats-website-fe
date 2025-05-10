@@ -53,21 +53,14 @@ const AddClubToSeasonModal = ({ leagueSeason, isOpen, setIsOpen, onSuccess }) =>
         try {
             const values = await form.validateFields();
             setSubmitting(true);
-
-            const numWins = values.numWins || 0;
-            const numDraws = values.numDraws || 0;
-            const numLosses = values.numLosses || 0;
-
-            const points = numWins * 3 + numDraws;
-
             const clubSeasonData = {
                 season: leagueSeason.id,
                 club: values.club,
-                points: points,
+                points: values.points,
                 ranked: values.ranked || 0,
-                numWins: numWins,
-                numLosses: numLosses,
-                numDraws: numDraws,
+                numWins: values.numWins || 0,
+                numLosses: values.numLosses || 0,
+                numDraws: values.numDraws || 0,
                 goalScores: values.goalScores || 0,
                 goalConceded: values.goalConceded || 0,
                 diff: (values.goalScores || 0) - (values.goalConceded || 0)
