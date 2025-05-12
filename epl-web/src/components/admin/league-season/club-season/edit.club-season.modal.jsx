@@ -10,7 +10,7 @@ const EditClubSeasonModal = ({ clubSeason, isOpen, setIsOpen, onSuccess }) => {
     useEffect(() => {
         if (isOpen && clubSeason) {
             form.setFieldsValue({
-                points: clubSeason.points,
+                // points: clubSeason.points,
                 ranked: clubSeason.ranked,
                 numWins: clubSeason.numWins,
                 numLosses: clubSeason.numLosses,
@@ -134,13 +134,6 @@ const EditClubSeasonModal = ({ clubSeason, isOpen, setIsOpen, onSuccess }) => {
                     <InputNumber min={0} style={{ width: '100%' }} />
                 </Form.Item>
 
-                <Form.Item
-                    name="points"
-                    label="Points"
-                    rules={[{ required: true, message: "Please enter points" }]}
-                >
-                    <InputNumber min={0} style={{ width: '100%' }} />
-                </Form.Item>
             </Form>
         </Modal>
     );

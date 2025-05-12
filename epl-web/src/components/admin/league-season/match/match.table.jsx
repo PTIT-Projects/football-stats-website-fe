@@ -1,4 +1,3 @@
-
 import { Table, Button, Space, Tag, Tabs } from "antd";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -7,7 +6,7 @@ import CreateMatchButton from "./create.match.button.jsx";
 import EditMatchButton from "./edit.match.button.jsx";
 import DeleteMatchButton from "./delete.match.button.jsx";
 
-const MatchTable = ({ leagueSeason }) => {
+const MatchTable = ({ leagueSeason, onLeagueTableUpdate }) => {
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [roundGroups, setRoundGroups] = useState({});
@@ -102,8 +101,18 @@ const MatchTable = ({ leagueSeason }) => {
                             Actions
                         </Button>
                     </Link>
-                    <EditMatchButton match={record} onSuccess={loadMatches} />
-                    <DeleteMatchButton match={record} onSuccess={loadMatches} />
+                    <EditMatchButton match={record} onSuccess={() => {
+                        loadMatches();
+                        if (onLeagueTableUpdate) {
+                            onLeagueTableUpdate();
+                        }
+                    }} />
+                    <DeleteMatchButton match={record} onSuccess={() => {
+                        loadMatches();
+                        if (onLeagueTableUpdate) {
+                            onLeagueTableUpdate();
+                        }
+                    }} />
                 </Space>
             ),
         },
@@ -133,7 +142,12 @@ const MatchTable = ({ leagueSeason }) => {
                 <h3>Matches</h3>
                 <CreateMatchButton
                     leagueSeason={leagueSeason}
-                    onSuccess={loadMatches} // Make sure this is correctly passed
+                    onSuccess={() => {
+                        loadMatches();
+                        if (onLeagueTableUpdate) {
+                            onLeagueTableUpdate();
+                        }
+                    }}
                 />
             </div>
 

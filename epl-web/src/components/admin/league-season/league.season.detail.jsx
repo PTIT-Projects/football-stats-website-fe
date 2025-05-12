@@ -16,7 +16,6 @@ const LeagueSeasonDetail = () => {
         try {
             const res = await fetchLeagueSeasonDetailAPI(id);
             if (res.data) {
-
                 setLeagueSeason({
                     ...res.data,
                     onRefresh: loadLeagueSeasonDetail
@@ -42,7 +41,7 @@ const LeagueSeasonDetail = () => {
         {
             key: "matches",
             label: "Matches",
-            children: <MatchTable leagueSeason={leagueSeason} />
+            children: <MatchTable leagueSeason={leagueSeason} onLeagueTableUpdate={loadLeagueSeasonDetail} />
         }
     ];
 

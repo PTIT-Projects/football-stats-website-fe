@@ -1,4 +1,3 @@
-
 import { Button, Form, Select, InputNumber, message, Modal, notification } from "antd";
 import { useState, useEffect } from "react";
 import { fetchAllClubsAPI, createClubSeasonTableAPI } from "../../../../services/api.service.js";
@@ -21,7 +20,6 @@ const AddClubToSeasonModal = ({ leagueSeason, isOpen, setIsOpen, onSuccess }) =>
         try {
             const res = await fetchAllClubsAPI();
             if (res && res.data) {
-
                 const clubsArray = Array.isArray(res.data) ? res.data :
                     (res.data.result ? res.data.result : []);
 
@@ -55,11 +53,10 @@ const AddClubToSeasonModal = ({ leagueSeason, isOpen, setIsOpen, onSuccess }) =>
         try {
             const values = await form.validateFields();
             setSubmitting(true);
-
             const clubSeasonData = {
                 season: leagueSeason.id,
                 club: values.club,
-                points: values.points || 0,
+                points: values.points,
                 ranked: values.ranked || 0,
                 numWins: values.numWins || 0,
                 numLosses: values.numLosses || 0,
@@ -74,7 +71,7 @@ const AddClubToSeasonModal = ({ leagueSeason, isOpen, setIsOpen, onSuccess }) =>
             if (res && res.data) {
                 message.success("Club added to season successfully");
                 form.resetFields();
-                onSuccess(); // Refresh club season data
+                onSuccess();
                 setIsOpen(false);
             } else {
                 notification.error({
@@ -116,7 +113,6 @@ const AddClubToSeasonModal = ({ leagueSeason, isOpen, setIsOpen, onSuccess }) =>
                 form={form}
                 layout="vertical"
                 initialValues={{
-                    points: 0,
                     ranked: 0,
                     numWins: 0,
                     numLosses: 0,
@@ -141,45 +137,23 @@ const AddClubToSeasonModal = ({ leagueSeason, isOpen, setIsOpen, onSuccess }) =>
                     />
                 </Form.Item>
 
-                <Form.Item
-                    name="numWins"
-                    label="Wins"
-                >
+                <Form.Item name="numWins" label="Wins">
                     <InputNumber min={0} style={{ width: '100%' }} />
                 </Form.Item>
 
-                <Form.Item
-                    name="numDraws"
-                    label="Draws"
-                >
+                <Form.Item name="numDraws" label="Draws">
                     <InputNumber min={0} style={{ width: '100%' }} />
                 </Form.Item>
 
-                <Form.Item
-                    name="numLosses"
-                    label="Losses"
-                >
+                <Form.Item name="numLosses" label="Losses">
                     <InputNumber min={0} style={{ width: '100%' }} />
                 </Form.Item>
 
-                <Form.Item
-                    name="goalScores"
-                    label="Goals Scored"
-                >
+                <Form.Item name="goalScores" label="Goals Scored">
                     <InputNumber min={0} style={{ width: '100%' }} />
                 </Form.Item>
 
-                <Form.Item
-                    name="goalConceded"
-                    label="Goals Conceded"
-                >
-                    <InputNumber min={0} style={{ width: '100%' }} />
-                </Form.Item>
-
-                <Form.Item
-                    name="points"
-                    label="Points"
-                >
+                <Form.Item name="goalConceded" label="Goals Conceded">
                     <InputNumber min={0} style={{ width: '100%' }} />
                 </Form.Item>
             </Form>
